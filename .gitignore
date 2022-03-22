@@ -1,0 +1,20 @@
+.*
+#### Except
+!.nvmrc
+!.gitignore
+!.github
+!.eslintrc.json
+
+#### Dependancies
+/node_modules
+
+#### Generated
+/dist
+/coverage
+/server
+/logs
+
+#### Misc
+npm-debug.log
+screeps.json
+.screeps.yaml
