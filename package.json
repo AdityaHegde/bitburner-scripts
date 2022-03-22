@@ -14,8 +14,8 @@
   "description": "Code for bitburner game",
   "main": "index.js",
   "scripts": {
-    "build": "rollup -c rollup.config.js",
-    "watch": "rollup -c rollup.config.js --watch",
+    "build": "rm -rf dist && rollup -c rollup.config.js",
+    "watch": "rm -rf dist && rollup -c rollup.config.js --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "adityahegderocks@gmail.com",

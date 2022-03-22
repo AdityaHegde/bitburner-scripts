@@ -5,6 +5,9 @@ import { Logger } from "../../utils/logger";
 
 const logger = new Logger("InitMetadata");
 
+/**
+ * Initialises {@link Metadata}
+ */
 export async function main(ns: NS) {
   await logger.started(ns);
   let metadata: Metadata;

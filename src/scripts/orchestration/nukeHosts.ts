@@ -1,10 +1,11 @@
-import { DistributedHackScript, PlayerServerPrefix } from "../../constants";
+import { PlayerServerPrefix } from "../../constants";
 import { CrackTypeToMethod } from "../../types/Cracks";
 import { NS } from "../../types/gameTypes";
-import { getMetadata, Metadata, saveMetadata, saveMetadataOnServer } from "../../types/Metadata";
+import { getMetadata, Metadata, saveMetadata } from "../../types/Metadata";
 import { setOrchestrationActions, OrchestrationActions } from "../../types/Orchestration";
 import { copyScriptToServer } from "../../utils/copyScriptsToServer";
 import { Logger } from "../../utils/logger";
+import { updateHackOrchestratorServer } from "../../utils/updateHackOrchestratorServer";
 
 async function crackNPCHost(
   ns: NS, metadata: Metadata, server: string,
@@ -54,14 +55,7 @@ export async function main(ns: NS) {
   if (!metadata.hackOrchestratorServer) {
     metadata.hackOrchestratorServer = metadata.servers.shift();
   }
-  const savePID = saveMetadataOnServer(ns, metadata, metadata.hackOrchestratorServer);
-  if (!ns.isRunning(DistributedHackScript, metadata.hackOrchestratorServer)) {
-    while (ns.isRunning(savePID, metadata.hackOrchestratorServer)) {
-      await ns.sleep(100);
-    }
-    await ns.sleep(100);
-    ns.exec(DistributedHackScript, metadata.hackOrchestratorServer, 1);
-  }
+  await updateHackOrchestratorServer(ns, metadata);
 
   await saveMetadata(ns, metadata);
   await logger.ended(ns);

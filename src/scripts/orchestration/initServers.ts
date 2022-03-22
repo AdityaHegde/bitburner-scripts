@@ -5,6 +5,10 @@ import { Logger } from "../../utils/logger";
 
 const logger = new Logger("InitServer");
 
+/**
+ * Does a breadth first search for accessible hosts within the city.
+ * Saves the identified servers in {@link Metadata.newServers}
+ */
 export async function main(ns: NS) {
   await logger.started(ns);
   const metadata: Metadata = await getMetadata(ns);

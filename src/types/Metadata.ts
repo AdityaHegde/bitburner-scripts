@@ -27,9 +27,10 @@ export interface Metadata {
 }
 
 export function metadataFactory(ns: NS): Metadata {
+  const playerServers = ns.getPurchasedServers();
   return {
     servers: [],
-    playerServers: ns.getPurchasedServers(),
+    playerServers,
     newServers: [],
 
     orchestratorServer: "home",
@@ -38,7 +39,7 @@ export function metadataFactory(ns: NS): Metadata {
 
     cracks: {},
 
-    playerServerCount: 0,
+    playerServerCount: playerServers.length,
     playerServerMaxCount: ns.getPurchasedServerLimit(),
     playerServerSize: 8,
 
