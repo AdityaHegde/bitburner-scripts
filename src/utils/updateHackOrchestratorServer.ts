@@ -5,12 +5,16 @@ import { killScriptIfRunning } from "./killScriptIfRunning";
 
 export async function updateHackOrchestratorServer(ns: NS, metadata: Metadata) {
   const hackOrchestratorServer = metadata.hackOrchestratorServer;
+  // kill the hack orchestration script
   killScriptIfRunning(ns, hackOrchestratorServer, DistributedHackScript);
 
-  const savePID = saveMetadataOnServer(ns, metadata, metadata.hackOrchestratorServer);
-  while (ns.isRunning(savePID, metadata.hackOrchestratorServer)) {
+  // copy over the metadata
+  const savePID = saveMetadataOnServer(ns, metadata, hackOrchestratorServer);
+  // wait till the file is saved
+  while (ns.isRunning(savePID, hackOrchestratorServer)) {
     await ns.sleep(100);
   }
   await ns.sleep(100);
-  ns.exec(DistributedHackScript, metadata.hackOrchestratorServer);
+  // start the orchestration script
+  ns.exec(DistributedHackScript, hackOrchestratorServer);
 }

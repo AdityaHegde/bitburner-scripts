@@ -1,5 +1,5 @@
 import typescript from "@rollup/plugin-typescript";
-import { readdirSync } from "fs";
+import { readdirSync } from "node:fs";
 
 const ScriptFolder = "src/scripts";
 const ScriptSubFolders = readdirSync(ScriptFolder);

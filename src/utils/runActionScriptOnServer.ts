@@ -6,9 +6,9 @@ export function runActionScriptOnServer(
   server: string, targetServer: string,
 ) {
   ns.killall(server);
-  ns.exec(
-    script, server,
-    getThreadsForScript(ns, server, script),
-    targetServer,
-  );
+
+  const threads = getThreadsForScript(ns, server, script);
+  if (threads === 0) return;
+
+  ns.exec(script, server, threads, targetServer);
 }

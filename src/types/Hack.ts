@@ -1,7 +1,9 @@
+import { NS } from "./gameTypes";
+
 export enum HackState {
-  Grow = 0,
-  Weaken = 0,
-  Hack = 0,
+  Grow,
+  Weaken,
+  Hack,
 }
 
 export const GrowScript = "grow.js";
@@ -16,3 +18,20 @@ export const HackStateToScript: {
   [HackState.Weaken]: WeakenScript,
   [HackState.Hack]: HackScript,
 };
+
+export interface HackMetadata {
+  state?: HackState;
+  targetServer?: string;
+  runningServers?: Array<string>;
+}
+
+export const HackMetadataFile = "hack.txt";
+
+export async function getHackMetadata(ns: NS): Promise<HackMetadata> {
+  const metadataString = await ns.read(HackMetadataFile);
+  return metadataString ? JSON.parse(metadataString) : undefined;
+}
+
+export async function saveHackMetadata(ns: NS, hackMetadata: HackMetadata) {
+  await ns.write(HackMetadataFile, JSON.stringify(hackMetadata), "w");
+}

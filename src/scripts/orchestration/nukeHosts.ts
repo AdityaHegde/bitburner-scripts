@@ -1,25 +1,24 @@
-import { PlayerServerPrefix } from "../../constants";
-import { CrackTypeToMethod } from "../../types/Cracks";
+import { OrchestratorScript, PlayerServerPrefix } from "../../constants";
+import { CrackType, CrackTypeToFile, runCracks } from "../../types/Cracks";
 import { NS } from "../../types/gameTypes";
 import { getMetadata, Metadata, saveMetadata } from "../../types/Metadata";
-import { setOrchestrationActions, OrchestrationActions } from "../../types/Orchestration";
 import { copyScriptToServer } from "../../utils/copyScriptsToServer";
 import { Logger } from "../../utils/logger";
 import { updateHackOrchestratorServer } from "../../utils/updateHackOrchestratorServer";
 
 async function crackNPCHost(
-  ns: NS, metadata: Metadata, server: string,
+  ns: NS,
+  metadata: Metadata,
+  server: string
 ): Promise<boolean> {
   const requiredPorts = ns.getServerNumPortsRequired(server);
-  const portCraks = Object.keys(metadata.cracks);
+  const cracksAvailable = Object.keys(metadata.cracks) as Array<CrackType>;
 
-  if (requiredPorts > portCraks.length) return false;
+  if (requiredPorts > cracksAvailable.length) return false;
 
-  for (let i = 0; i < requiredPorts && i < portCraks.length; i++) {
-    ns[CrackTypeToMethod[portCraks[i]]](server);
-  }
+  runCracks(ns, cracksAvailable, server, requiredPorts);
   ns.nuke(server);
-  
+
   return true;
 }
 
@@ -29,34 +28,47 @@ export async function main(ns: NS) {
   await logger.started(ns);
   const metadata: Metadata = await getMetadata(ns);
 
+  // collect available cracks
+  for (const crack of Object.keys(CrackTypeToFile)) {
+    if (ns.fileExists(CrackTypeToFile[crack])) {
+      metadata.cracks[crack] = true;
+    }
+  }
+
   let i = 0;
   while (i < metadata.newServers.length) {
     const server = metadata.newServers[i];
 
-    if (server.startsWith(PlayerServerPrefix) ||
-        await crackNPCHost(ns, metadata, server)) {
+    if (
+      // if it is a new player server
+      server.startsWith(PlayerServerPrefix) ||
+      // or is cracked
+      (await crackNPCHost(ns, metadata, server))
+    ) {
+      // copy all scripts
       await copyScriptToServer(ns, server);
+      // update metadata
       metadata.newServers.splice(i, 1);
       if (server.startsWith(PlayerServerPrefix)) {
         metadata.playerServers.push(server);
       } else {
         metadata.servers.push(server);
-        setOrchestrationActions(metadata, OrchestrationActions.NewNPCServer);
       }
-      await logger.log(ns, `Initilised ${server}`);
+      await logger.log(ns, `Initialised ${server}`);
     } else {
       i++;
-      await logger.log(ns, `Failed to Initilised ${server}`);
     }
 
     await ns.sleep(100);
   }
 
+  // update the hack orchestrator
   if (!metadata.hackOrchestratorServer) {
     metadata.hackOrchestratorServer = metadata.servers.shift();
   }
   await updateHackOrchestratorServer(ns, metadata);
 
+  // save metadata
   await saveMetadata(ns, metadata);
   await logger.ended(ns);
 }

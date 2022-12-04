@@ -1,8 +1,6 @@
-import { MetadataFile, OrchestratorScript, WriteRemoteMetadataScript } from "../constants";
+import { MetadataFile, WriteRemoteMetadataScript } from "../constants";
 import { CrackType } from "./Cracks";
 import { NS } from "./gameTypes";
-import { HackState } from "./Hack";
-import { OrchestrationActions } from "./Orchestration";
 
 export interface Metadata {
   servers: Array<string>;
@@ -13,17 +11,12 @@ export interface Metadata {
   orchestratorServer?: string;
 
   lastCheckHackLevel: number;
-  currentHackTarget?: string;
-  hackState?: HackState;
 
   cracks: Partial<Record<CrackType, boolean>>;
 
   playerServerCount: number;
   playerServerMaxCount: number;
   playerServerSize: number;
-
-  orchestrationActions: number;
-  actionsThrottle: Partial<Record<OrchestrationActions, number>>;
 }
 
 export function metadataFactory(ns: NS): Metadata {
@@ -42,9 +35,6 @@ export function metadataFactory(ns: NS): Metadata {
     playerServerCount: playerServers.length,
     playerServerMaxCount: ns.getPurchasedServerLimit(),
     playerServerSize: 8,
-
-    orchestrationActions: 0,
-    actionsThrottle: {},
   };
 }
 
@@ -53,17 +43,19 @@ export async function getMetadata(ns: NS): Promise<Metadata> {
   return metadataString ? JSON.parse(metadataString) : undefined;
 }
 
-export async function saveMetadata(
-  ns: NS, metadata: Metadata, runOrchestrator = false,
-) {
+export async function saveMetadata(ns: NS, metadata: Metadata) {
   await ns.write(MetadataFile, JSON.stringify(metadata), "w");
-  if (runOrchestrator) {
-    ns.run(OrchestratorScript);
-  }
 }
 
 export function saveMetadataOnServer(
-  ns: NS, metadata: Metadata, server = metadata.hackOrchestratorServer,
+  ns: NS,
+  metadata: Metadata,
+  server = metadata.hackOrchestratorServer
 ) {
-  return ns.exec(WriteRemoteMetadataScript, server, 1, JSON.stringify(metadata));
+  return ns.exec(
+    WriteRemoteMetadataScript,
+    server,
+    1,
+    JSON.stringify(metadata)
+  );
 }

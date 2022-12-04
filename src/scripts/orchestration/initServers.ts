@@ -28,7 +28,7 @@ export async function main(ns: NS) {
       if (foundServers.has(newFoundServer)) continue;
       foundServers.add(newFoundServer);
       metadata.newServers.push(newFoundServer);
-      
+
       newFoundServersCount++;
       newFoundServers.push(...ns.scan(newFoundServer));
       await copyScriptToServer(ns, newFoundServer);

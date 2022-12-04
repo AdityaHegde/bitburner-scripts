@@ -4,6 +4,8 @@
 !.gitignore
 !.github
 !.eslintrc.json
+!.prettierrc.json
+!.prettierignore
 
 #### Dependancies
 /node_modules
@@ -11,10 +13,6 @@
 #### Generated
 /dist
 /coverage
-/server
-/logs
 
 #### Misc
 npm-debug.log
-screeps.json
-.screeps.yaml
