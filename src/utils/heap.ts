@@ -8,11 +8,11 @@ export class Heap<Item, Key = string> {
    * @param {Function} keyGetter Returns the key to use in the map. Defaults to using the element as key.
    */
   constructor(
-    private readonly compareFunction = function (a, b) {
-      return a - b;
+    private readonly compareFunction = function (a: Item, b: Item) {
+      return (a as any) - (b as any);
     },
-    private readonly keyGetter = function (a): Key {
-      return a;
+    private readonly keyGetter = function (a: Item): Key {
+      return a as any;
     }
   ) {}
 

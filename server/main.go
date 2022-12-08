@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/AdityaHegde/bitburner-scripts/server/game_scripts"
+	"github.com/AdityaHegde/bitburner-scripts/server/game/scripts"
+	"github.com/AdityaHegde/bitburner-scripts/server/game/stats"
 	"github.com/AdityaHegde/bitburner-scripts/server/socket"
 )
 
@@ -15,8 +16,10 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		gs := game_scripts.NewGameScripts(dist, c)
-		go gs.Run()
+		gameScripts := scripts.NewScripts(dist, c)
+		go gameScripts.Run()
+		gameStats := stats.NewStats(c)
+		go gameStats.Run()
 	})
 	s.Start("9080")
 }

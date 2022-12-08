@@ -1,11 +1,13 @@
-import { DistributedHackScript, WriteRemoteMetadataScript } from "../constants";
+import {
+  HackOrchestratorScript,
+  WriteRemoteMetadataScript,
+} from "../constants";
 import { NS } from "../types/gameTypes";
-import { HackScripts } from "../types/Hack";
+import { HackScripts } from "../hack/helpers/hackTypes";
 
-export async function copyScriptToServer(ns: NS, server: string) {
-  await ns.scp([
-    ...HackScripts,
-    DistributedHackScript,
-    WriteRemoteMetadataScript,
-  ], server);
+export function copyScriptToServer(ns: NS, server: string): void {
+  ns.scp(
+    [...HackScripts, HackOrchestratorScript, WriteRemoteMetadataScript],
+    server
+  );
 }

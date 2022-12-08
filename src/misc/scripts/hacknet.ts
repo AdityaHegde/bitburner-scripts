@@ -10,7 +10,7 @@ enum UpgradeTypes {
   Ram,
   Core,
 }
-const LevelStep = 5;
+const LevelStep = 1;
 const RamStep = 1;
 const CoreStep = 1;
 
@@ -79,7 +79,7 @@ export async function main(ns: NS) {
       case UpgradeTypes.Purchase:
         addNode(hacknet.purchaseNode());
         nodeCount++;
-        await logger.log(ns, `Purchased hacknet node: ${nodeCount}`);
+        logger.log(ns, `Purchased hacknet node: ${nodeCount}`);
         if (nodeCount < maxNodeCount) {
           upgrade.price = hacknet.getPurchaseNodeCost();
           heap.push(upgrade);
@@ -88,7 +88,7 @@ export async function main(ns: NS) {
 
       case UpgradeTypes.Level:
         hacknet.upgradeLevel(upgrade.node, upgrade.count);
-        await logger.log(ns, `Upgraded node level: ${upgrade.node}`);
+        logger.log(ns, `Upgraded node level: ${upgrade.node}`);
         upgrade.price = hacknet.getLevelUpgradeCost(
           upgrade.node,
           upgrade.count
@@ -98,14 +98,14 @@ export async function main(ns: NS) {
 
       case UpgradeTypes.Ram:
         hacknet.upgradeRam(upgrade.node, upgrade.count);
-        await logger.log(ns, `Upgraded node ram: ${upgrade.node}`);
+        logger.log(ns, `Upgraded node ram: ${upgrade.node}`);
         upgrade.price = hacknet.getRamUpgradeCost(upgrade.node, upgrade.count);
         heap.push(upgrade);
         break;
 
       case UpgradeTypes.Core:
         hacknet.upgradeCore(upgrade.node, upgrade.count);
-        await logger.log(ns, `Upgraded node core: ${upgrade.node}`);
+        logger.log(ns, `Upgraded node core: ${upgrade.node}`);
         upgrade.price = hacknet.getCoreUpgradeCost(upgrade.node, upgrade.count);
         heap.push(upgrade);
         break;

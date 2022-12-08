@@ -1,7 +1,10 @@
 import { NS } from "../../types/gameTypes";
-import { Metadata, getMetadata, saveMetadata } from "../../types/Metadata";
+import { Metadata, saveMetadata, newMetadata } from "../../types/Metadata";
 import { copyScriptToServer } from "../../utils/copyScriptsToServer";
 import { Logger } from "../../utils/logger";
+import { HackOrchestratorScript } from "../../constants";
+import { updateHackOrchestratorServer } from "../../utils/updateHackOrchestratorServer";
+import { crackNPCServer } from "../../hack/helpers/cracks";
 
 const logger = new Logger("InitServer");
 
@@ -11,13 +14,15 @@ const logger = new Logger("InitServer");
  */
 export async function main(ns: NS) {
   await logger.started(ns);
-  const metadata: Metadata = await getMetadata(ns);
+  const metadata: Metadata = newMetadata(ns);
 
   const foundServers = new Set();
   foundServers.add(metadata.orchestratorServer);
 
   let newFoundServersCount: number;
   let newFoundServers = ns.scan();
+
+  const hackOrchestratorMem = ns.getScriptRam(HackOrchestratorScript);
 
   do {
     newFoundServersCount = 0;
@@ -27,18 +32,26 @@ export async function main(ns: NS) {
     for (const newFoundServer of newFoundServersTemp) {
       if (foundServers.has(newFoundServer)) continue;
       foundServers.add(newFoundServer);
-      metadata.newServers.push(newFoundServer);
 
       newFoundServersCount++;
       newFoundServers.push(...ns.scan(newFoundServer));
-      await copyScriptToServer(ns, newFoundServer);
-
-      await logger.log(ns, `Found server=${newFoundServer}`);
+      copyScriptToServer(ns, newFoundServer);
+      metadata.newServers.push(newFoundServer);
+      if (
+        !metadata.hackOrchestratorServer &&
+        ns.getServerMaxRam(newFoundServer) > hackOrchestratorMem &&
+        crackNPCServer(ns, metadata, newFoundServer)
+      ) {
+        // if this server can act as orchestrator crack it and assign it
+        metadata.hackOrchestratorServer = newFoundServer;
+      }
     }
 
     await ns.sleep(100);
   } while (newFoundServersCount > 0);
 
-  await saveMetadata(ns, metadata);
-  await logger.ended(ns);
+  await updateHackOrchestratorServer(ns, metadata);
+
+  saveMetadata(ns, metadata);
+  logger.ended(ns);
 }

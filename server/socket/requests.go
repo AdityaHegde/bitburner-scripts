@@ -13,6 +13,8 @@ type Request struct {
 	Params  map[string]string `json:"params"`
 }
 
+var FileMissing = errors.New("file missing")
+
 func (c *Client) GetFileNames(server string) ([]string, error) {
 	c.id++
 	id := c.id
@@ -75,6 +77,9 @@ func (c *Client) GetFile(server string, fileName string) (string, error) {
 	})
 	if err != nil {
 		return "", err
+	}
+	if res["result"] == nil {
+		return "", FileMissing
 	}
 
 	return res["result"].(string), nil

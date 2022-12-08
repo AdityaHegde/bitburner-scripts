@@ -1,4 +1,4 @@
-package game_scripts
+package scripts
 
 import (
 	"fmt"
@@ -11,24 +11,24 @@ import (
 
 const TargetServer = "home"
 
-type GameScripts struct {
+type Scripts struct {
 	dir     string
 	client  *socket.Client
 	lastRun time.Time
 }
 
-func NewGameScripts(dir string, client *socket.Client) *GameScripts {
-	return &GameScripts{
+func NewScripts(dir string, client *socket.Client) *Scripts {
+	return &Scripts{
 		dir:    dir,
 		client: client,
 	}
 }
 
-func (gs *GameScripts) Run() {
-	fmt.Println("Reading", gs.dir)
+func (s *Scripts) Run() {
+	fmt.Println("Reading", s.dir)
 
 	for {
-		files, err := os.ReadDir(gs.dir)
+		files, err := os.ReadDir(s.dir)
 		if err != nil {
 			fmt.Println("read dir error", err)
 			return
@@ -39,14 +39,14 @@ func (gs *GameScripts) Run() {
 				continue
 			}
 
-			filePath := path.Join(gs.dir, file.Name())
+			filePath := path.Join(s.dir, file.Name())
 
 			stat, err := os.Stat(filePath)
 			if err != nil {
 				fmt.Println("stat file error", err)
 				continue
 			}
-			if gs.lastRun.After(stat.ModTime()) {
+			if s.lastRun.After(stat.ModTime()) {
 				continue
 			}
 
@@ -56,11 +56,11 @@ func (gs *GameScripts) Run() {
 				continue
 			}
 
-			err = gs.client.PushFile(TargetServer, file.Name(), string(content))
+			err = s.client.PushFile(TargetServer, file.Name(), string(content))
 			if err != nil {
 				fmt.Println("put file error", err)
 			}
-			mem, err := gs.client.CalculateRam(TargetServer, file.Name())
+			mem, err := s.client.CalculateRam(TargetServer, file.Name())
 			if err != nil {
 				fmt.Println("calculate ram error", err)
 			}
@@ -68,7 +68,7 @@ func (gs *GameScripts) Run() {
 		}
 		// TODO: delete old files
 
-		gs.lastRun = time.Now()
+		s.lastRun = time.Now()
 		time.Sleep(time.Second)
 	}
 }

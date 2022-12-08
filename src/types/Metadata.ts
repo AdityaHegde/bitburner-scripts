@@ -1,10 +1,9 @@
 import { MetadataFile, WriteRemoteMetadataScript } from "../constants";
-import { CrackType } from "./Cracks";
+import { CrackType } from "../hack/helpers/cracks";
 import { NS } from "./gameTypes";
 
 export interface Metadata {
   servers: Array<string>;
-  playerServers: Array<string>;
   newServers: Array<string>;
 
   hackOrchestratorServer?: string;
@@ -19,11 +18,10 @@ export interface Metadata {
   playerServerSize: number;
 }
 
-export function metadataFactory(ns: NS): Metadata {
+export function newMetadata(ns: NS): Metadata {
   const playerServers = ns.getPurchasedServers();
   return {
-    servers: [],
-    playerServers,
+    servers: [...playerServers],
     newServers: [],
 
     orchestratorServer: "home",
@@ -34,17 +32,17 @@ export function metadataFactory(ns: NS): Metadata {
 
     playerServerCount: playerServers.length,
     playerServerMaxCount: ns.getPurchasedServerLimit(),
-    playerServerSize: 8,
+    playerServerSize: 16,
   };
 }
 
-export async function getMetadata(ns: NS): Promise<Metadata> {
-  const metadataString = await ns.read(MetadataFile);
+export function getMetadata(ns: NS): Metadata {
+  const metadataString = ns.read(MetadataFile);
   return metadataString ? JSON.parse(metadataString) : undefined;
 }
 
-export async function saveMetadata(ns: NS, metadata: Metadata) {
-  await ns.write(MetadataFile, JSON.stringify(metadata), "w");
+export function saveMetadata(ns: NS, metadata: Metadata) {
+  ns.write(MetadataFile, JSON.stringify(metadata), "w");
 }
 
 export function saveMetadataOnServer(
