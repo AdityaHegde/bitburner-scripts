@@ -1,13 +1,35 @@
 {
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "target": "es2022",
-    "module": "es2022",
+    "allowJs": true,
+    "checkJs": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "baseUrl": "./",
+    "paths": {
+      "$lib": [
+        "web/lib"
+      ],
+      "$lib/*": [
+        "web/lib/*"
+      ],
+      "$components/*": [
+        "web/lib/components/*"
+      ],
+      "$scripts/*": [
+        "scripts/*"
+      ]
+    }
   },
   "include": [
-    "src/**/*.ts",
-    "rollup.config.js"
+    "scripts/**/*.ts",
+    "web/**/*.ts",
+    "web/**/*.svelte",
+    "rollup.config.js",
+    ".eslintrc.cjs"
   ],
   "exclude": [
     "node_modules"
