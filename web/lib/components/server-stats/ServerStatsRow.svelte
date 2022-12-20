@@ -12,9 +12,8 @@
     <span>{ShorthandNotationSchema.usd.convert(serverStats.money)}</span
     >/<span>{ShorthandNotationSchema.usd.convert(serverStats.maxMoney)}</span>
   </td>
-  <td class="text-center">{serverStats.rates.map(rate => rate.toFixed(2)).join("|")}</td>
+  <td class="text-center">{serverStats.rates[0].toFixed(2)}|{serverStats.rates[2].toFixed(4)}</td>
   <td class="text-center">{serverStats.times.map(
     time => ShorthandNotationSchema.time.convert(time)
   ).join("|")}</td>
-  <td class="text-center">{serverStats.securities.map(sec => sec.toFixed(2)).join("|")}</td>
 </tr>

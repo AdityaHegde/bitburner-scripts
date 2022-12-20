@@ -18,13 +18,14 @@
     <th class="w-40 text-center">Money</th>
     <th class="w-40 text-center">Rates</th>
     <th class="w-80 text-center">Times</th>
-    <th class="w-40 text-center">Securities</th>
   </tr>
   </thead>
   <tbody>
   {#each listOfServerStats as serverStats}
     {#if serverStats.maxMoney > 0}
-      <ServerStatsRow {serverStats} />
+      {#key serverStats.server}
+        <ServerStatsRow {serverStats} />
+      {/key}
     {/if}
   {/each}
   </tbody>

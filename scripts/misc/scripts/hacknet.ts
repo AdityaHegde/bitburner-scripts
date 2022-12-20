@@ -2,8 +2,6 @@ import type { NS } from "../../types/gameTypes";
 import { Logger } from "../../utils/logger";
 import { Heap } from "../../utils/heap";
 
-const logger = new Logger("HackNet");
-
 enum UpgradeTypes {
   Purchase,
   Level,
@@ -23,6 +21,8 @@ type UpgradeEntry = {
 };
 
 export async function main(ns: NS) {
+  const logger = new Logger(ns, "HackNet");
+
   const heap = new Heap<UpgradeEntry>(
     (a, b) => b.price - a.price,
     (a) => `${a.type}-${a.node}`,
@@ -79,7 +79,7 @@ export async function main(ns: NS) {
       case UpgradeTypes.Purchase:
         addNode(hacknet.purchaseNode());
         nodeCount++;
-        logger.log(ns, "Purchased", {
+        logger.log("Purchased", {
           node: nodeCount,
         });
         if (nodeCount < maxNodeCount) {
@@ -90,7 +90,7 @@ export async function main(ns: NS) {
 
       case UpgradeTypes.Level:
         hacknet.upgradeLevel(upgrade.node, upgrade.count);
-        logger.log(ns, "UpgradedLevel", {
+        logger.log("UpgradedLevel", {
           node: upgrade.node,
           level: hacknet.getNodeStats(upgrade.node).level,
         });
@@ -103,7 +103,7 @@ export async function main(ns: NS) {
 
       case UpgradeTypes.Ram:
         hacknet.upgradeRam(upgrade.node, upgrade.count);
-        logger.log(ns, "UpgradedRam", {
+        logger.log("UpgradedRam", {
           node: upgrade.node,
           ram: hacknet.getNodeStats(upgrade.node).ram,
         });
@@ -116,7 +116,7 @@ export async function main(ns: NS) {
 
       case UpgradeTypes.Core:
         hacknet.upgradeCore(upgrade.node, upgrade.count);
-        logger.log(ns, "UpgradedCore", {
+        logger.log("UpgradedCore", {
           node: upgrade.node,
           cores: hacknet.getNodeStats(upgrade.node).cores,
         });
@@ -128,7 +128,6 @@ export async function main(ns: NS) {
         break;
     }
 
-    logger.ended(ns);
     await ns.sleep(1000);
   }
 }

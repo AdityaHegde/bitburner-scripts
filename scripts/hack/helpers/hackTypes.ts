@@ -29,3 +29,8 @@ export const ScriptToMemMap = {
   [WeakenScript]: 1.75,
   [HackScript]: 1.7,
 };
+export const HackTypeToMemMap = {
+  [HackType.Grow]: 1.75,
+  [HackType.Weaken]: 1.75,
+  [HackType.Hack]: 1.7,
+};

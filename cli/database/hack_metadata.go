@@ -34,7 +34,6 @@ type ServerStats struct {
 	Mem          float32                `json:"mem"`
 	Times        pq.Float32Array        `json:"times" gorm:"type:float[]"`
 	Rates        pq.Float32Array        `json:"rates" gorm:"type:float[]"`
-	Securities   pq.Float32Array        `json:"securities" gorm:"type:float[]"`
 	TargetServer map[string]map[int]int `json:"targetServer" gorm:"type:jsonb"`
 	CreatedAt    time.Time              `json:"createdAt"`
 }

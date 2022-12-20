@@ -1,29 +1,21 @@
 import type { NS } from "../types/gameTypes";
 
-const LogFile = "out.txt";
-
 export class Logger {
-  public constructor(private readonly label: string) {}
-
-  public async started(ns: NS): Promise<void> {
-    this.log(ns, "Started");
-    await ns.sleep(100);
+  public constructor(private readonly ns: NS, private readonly label: string) {
+    ns.disableLog("ALL");
   }
 
-  public log(ns: NS, message: string, fields?: Record<string, any>): void {
-    fields ??= {};
-    ns.write(
-      LogFile,
-      JSON.stringify({
-        label: this.label,
-        message,
-        fields: fields,
-      }) + "\n",
-      "a",
-    );
-  }
-
-  public ended(ns: NS): void {
-    this.log(ns, "Ended");
+  public log(message: string, fields: Record<string, any> = {}): void {
+    let fieldsStrings = "";
+    for (const key in fields) {
+      const val = fields[key];
+      const valType = typeof val;
+      if (valType === "object") {
+        fieldsStrings += ` ${key}=${JSON.stringify(val)}`;
+      } else {
+        fieldsStrings += ` ${key}=${val}`;
+      }
+    }
+    this.ns.printf("[%s] %s%s\n", this.label, message, fieldsStrings);
   }
 }

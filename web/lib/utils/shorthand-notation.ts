@@ -27,6 +27,7 @@ export class ShorthandNotationSchema {
     "$",
     2,
   );
+  // Rudimentary time conversion. For anything greater than a day use something else.
   public static time = new ShorthandNotationSchema(
     ["ms", "s", "min", "hour"],
     [1000, 60, 60],

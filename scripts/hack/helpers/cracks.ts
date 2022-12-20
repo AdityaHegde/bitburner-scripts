@@ -1,97 +1,87 @@
 import type { NS } from "../../types/gameTypes";
-import type { Metadata } from "../../types/Metadata";
 import { copyScriptToServer } from "../../utils/copyScriptsToServer";
-import type { HackMetadata } from "./hacksMetadata";
-import { newServerStats } from "./hacksMetadata";
 import { isPlayerServer } from "$scripts/utils/isPlayerServer";
+import type { HackTargetMetadata } from "$scripts/metadata/hackTargetMetadata";
 
-export type CrackType = "BruteSSH" | "FTPCrack" | "RelaySMTP" | "HTTPWorm" | "SQLInject";
-export const CrackTypeToFile: Record<CrackType, string> = {
-  BruteSSH: "BruteSSH.exe",
-  FTPCrack: "FTPCrack.exe",
-  RelaySMTP: "relaySMTP.exe",
-  HTTPWorm: "HTTPWorm.exe",
-  SQLInject: "SQLInject.exe",
-};
-export const MaxCracksCount = Object.keys(CrackTypeToFile).length;
+export const Cracks: Array<string> = [
+  "BruteSSH.exe",
+  "FTPCrack.exe",
+  "RelaySMTP.exe",
+  "HTTPWorm.exe",
+  "SQLInject.exe",
+];
 
-export const CrackRequiredLevel: Record<CrackType, number> = {
-  BruteSSH: 50,
-  FTPCrack: 100,
-  RelaySMTP: 250,
-  HTTPWorm: 500,
-  SQLInject: 750,
-};
-
-export function collectCracks(ns: NS, metadata: Metadata) {
-  // collect available cracks
-  for (const crack of Object.keys(CrackTypeToFile)) {
-    if (!metadata.cracks[crack] && ns.fileExists(CrackTypeToFile[crack], "home")) {
-      metadata.cracks[crack] = true;
+export function collectCracks(ns: NS, existing: Array<number>): Array<number> {
+  for (let i = existing[existing.length - 1] ?? 0; i < Cracks.length; i++) {
+    if (ns.fileExists(Cracks[i], "home")) {
+      existing.push(i);
+    } else {
+      // cracks are available in order
+      break;
     }
   }
+  return existing;
 }
 
-export function runCracks(ns: NS, cracks: Array<CrackType>, server: string, requiredPorts: number) {
+export function runCracks(ns: NS, cracks: Array<number>, server: string, requiredPorts: number) {
   for (let i = 0; i < requiredPorts && i < cracks.length; i++) {
     // using the map CrackTypeToMethod to run the command does not add to script mem
     // hence using the methods directly to not exploit
     switch (cracks[i]) {
-      case "BruteSSH":
+      case 0:
         ns.brutessh(server);
         break;
 
-      case "FTPCrack":
+      case 1:
         ns.ftpcrack(server);
         break;
 
-      case "RelaySMTP":
+      case 2:
         ns.relaysmtp(server);
         break;
 
-      case "HTTPWorm":
+      case 3:
         ns.httpworm(server);
         break;
 
-      case "SQLInject":
+      case 4:
         ns.sqlinject(server);
         break;
     }
   }
 }
 
-export function crackNPCServer(ns: NS, metadata: Metadata, server: string): boolean {
+export function crackNPCServer(ns: NS, metadata: HackTargetMetadata, server: string): boolean {
   const requiredPorts = ns.getServerNumPortsRequired(server);
-  const cracksAvailable = Object.keys(metadata.cracks) as Array<CrackType>;
 
-  if (requiredPorts > cracksAvailable.length) return false;
+  if (requiredPorts > metadata.cracks.length) return false;
 
-  runCracks(ns, cracksAvailable, server, requiredPorts);
+  runCracks(ns, metadata.cracks, server, requiredPorts);
   ns.nuke(server);
 
   return true;
 }
 
-export function nukeServers(ns: NS, metadata: Metadata, hackMetadata: HackMetadata): void {
-  collectCracks(ns, metadata);
+export function nukeServers(ns: NS, hackTargetMetadata: HackTargetMetadata): Array<string> {
+  hackTargetMetadata.cracks = collectCracks(ns, hackTargetMetadata.cracks);
 
-  const remainingServers = [];
-  for (const server of metadata.newServers) {
-    if (
-      // if it is not a new player server
-      !isPlayerServer(server) &&
-      // or is not cracked
-      !crackNPCServer(ns, metadata, server)
-    ) {
-      remainingServers.push(server);
-      // skip the server
-      continue;
+  const cracked = [];
+  let i = 0;
+  for (; i < hackTargetMetadata.newServers.length; i++) {
+    const server = hackTargetMetadata.newServers[i];
+    if (!isPlayerServer(server) && !crackNPCServer(ns, hackTargetMetadata, server)) {
+      // newServers are in order of required hack level
+      // so any server not cracked means successive ones are not cracked either
+      break;
     }
 
     // copy all scripts
     copyScriptToServer(ns, server);
-    hackMetadata.serverStats[server] ??= newServerStats(ns, server);
-    metadata.servers.push(server);
+    cracked.push(server);
   }
-  metadata.newServers = remainingServers;
+  if (i > 0) {
+    hackTargetMetadata.newServers = hackTargetMetadata.newServers.splice(i);
+  }
+
+  return cracked;
 }

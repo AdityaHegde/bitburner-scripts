@@ -9,6 +9,7 @@
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
         retry: false,
+        keepPreviousData: true,
       },
     },
   });

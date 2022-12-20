@@ -9,7 +9,6 @@ type ServerStats struct {
 	Mem          float32                `json:"mem"`
 	Times        []float32              `json:"times"`
 	Rates        []float32              `json:"rates"`
-	Securities   []float32              `json:"securities"`
 	TargetServer map[string]map[int]int `json:"targetServer"`
 }
 

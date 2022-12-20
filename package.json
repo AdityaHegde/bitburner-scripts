@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "rm -rf dist/* && rollup -c rollup.config.js",
+    "watch": "rm -rf dist/* && npx rollup -c rollup.config.js --watch",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
