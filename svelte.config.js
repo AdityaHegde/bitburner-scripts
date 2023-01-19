@@ -21,9 +21,10 @@ const config = {
       appTemplate: "web/app.html",
     },
     alias: {
+      $src: resolve("./src"),
       $lib: resolve("./web/lib"),
       $components: resolve("./web/lib/components"),
-      $scripts: resolve("./scripts"),
+      $server: resolve("./server"),
     },
   },
 };

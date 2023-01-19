@@ -5,7 +5,7 @@ const DestFolder = "dist";
 
 const config = [];
 
-glob.sync("scripts/**/scripts/*.ts").forEach((file) => {
+glob.sync("scripts/**/*.ts").forEach((file) => {
   config.push({
     input: `${file}`,
     output: {

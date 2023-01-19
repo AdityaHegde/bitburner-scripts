@@ -10,24 +10,30 @@
     "sourceMap": true,
     "baseUrl": "./",
     "paths": {
-      "$lib": [
-        "web/lib"
+      "$src/*": [
+        "src/*"
       ],
       "$lib/*": [
         "web/lib/*"
       ],
+      "$lib": [
+        "web/lib"
+      ],
       "$components/*": [
         "web/lib/components/*"
       ],
-      "$scripts/*": [
-        "scripts/*"
+      "$server/*": [
+        "server/*"
       ]
     }
   },
   "include": [
+    "src/**/*.ts",
     "scripts/**/*.ts",
+    "server/**/*.ts",
     "web/**/*.ts",
     "web/**/*.svelte",
+    "test/**/*.ts",
     "rollup.config.js",
     ".eslintrc.cjs"
   ],

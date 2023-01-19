@@ -1,22 +1,8 @@
 <script lang="ts">
+  import "$lib/stores/statsSocketClient";
   import "../app.css";
-  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
-
-  const client = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
-        retry: false,
-        keepPreviousData: true,
-      },
-    },
-  });
 </script>
 
-<main class="h-screen relative">
-  <QueryClientProvider {client}>
-    <slot />
-  </QueryClientProvider>
+<main class="h-screen relative p-5">
+  <slot />
 </main>
