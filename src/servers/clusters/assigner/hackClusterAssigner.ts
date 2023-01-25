@@ -25,34 +25,13 @@ export class HackClusterAssigner extends ClusterAssigner {
     return this.clusterData.groups[0].remainingThreads.every((threads) => threads <= 0);
   }
 
-  public assign() {
-    const resourceShards = new Map<Resource, ClusterData>();
-
-    for (const group of this.clusterData.groups) {
-      if (group.remainingThreads.some((threads) => threads > 0)) continue;
-
-      for (let i = 0; i < this.hackJob.operations.length; i++) {
-        this.assignReservations(group, resourceShards);
-      }
-    }
-
-    for (const [resource, clusterData] of resourceShards) {
-      // any resource that was split and not fully consumed add it to this cluster.
-      // TODO: manage shards better
-      clusterData.remove(resource);
-    }
-    this.clusterData.runs = this.hackJob.runs;
-
-    this.clear();
-  }
-
   private reserveServersForGroup(
     group: ClusterGroup,
     leadGroup: ClusterGroup,
     clusterData: ClusterData,
     index = 0,
   ) {
-    let resources: Array<[Resource, number]>;
+    let resources: Array<[Resource, number, HackType]>;
 
     if (group === leadGroup) {
       [group.remainingThreads[this.hackJob.hackIdx], resources, index] = this.reserveServersForType(

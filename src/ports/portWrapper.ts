@@ -1,7 +1,9 @@
-import type { PortPacket, PortPacketType } from "$src/ports/portPacket";
+import type { PortPacket, PortPacketType } from "$src/ports/packets/portPacket";
 import type { NetscriptPort, NS } from "../types/gameTypes";
 
 export const PortDataWait = 50;
+
+export const LogAggregationPort = 99;
 
 export const HackResponsePort = 100;
 export const HackPortStart = 101;
@@ -37,6 +39,10 @@ export class PortWrapper {
 
   public empty() {
     return this.portHandle.empty();
+  }
+
+  public peek() {
+    return this.portHandle.peek();
   }
 
   public clear() {

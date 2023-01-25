@@ -1,9 +1,11 @@
-import { GrowTimeMulti, WeakenTimeMulti } from "$src/constants";
-import { newExitPacket, newHackRequestPacket } from "$src/ports/portPacket";
+import { GrowTimeMulti, HackBatchPercents, SharePowerTime, WeakenTimeMulti } from "$src/constants";
+import { newExitPacket } from "$src/ports/packets/exitPacket";
+import { newHackRequestPacket } from "$src/ports/packets/hackRequestPacket";
 import { PortPool } from "$src/ports/portPool";
 import { PortWrapper } from "$src/ports/portWrapper";
-import type { NS } from "../types/gameTypes";
-import type { Logger } from "../utils/logger";
+import type { NS, Player, Server } from "../types/gameTypes";
+import type { Logger } from "../utils/logger/logger";
+import type { HackTypesData } from "./hack/hackTypes";
 import { HackType, HackTypeToMemMap, HackTypeToScript } from "./hack/hackTypes";
 
 export const ResourceLogMessage = "Resource";
@@ -16,7 +18,7 @@ export type ResourceLog = {
   security: number;
   rate: number;
   growth: number;
-  times: [number, number, number, number];
+  times: HackTypesData;
   commPort: number;
 };
 
@@ -29,25 +31,26 @@ export enum ResourceState {
 
 export class Resource {
   public readonly reqLevel: number;
-  public readonly minSecurity: number;
-  public readonly maxMoney: number;
+  public readonly minSecurity: number = 0;
+  public readonly maxMoney: number = 0;
 
-  public threads: [number, number, number, number];
-  public maxMem: number;
+  public threads: HackTypesData;
+  public maxMem = 0;
   public mem: number;
   public cores: number;
 
-  public security: number;
-  public money: number;
+  public security = 0;
+  public money = 0;
   public rate: number;
   public growth: number;
-  public times: [number, number, number, number] = [0, 0, 0, 0];
+  public times: HackTypesData = [0, 0, 0, 0];
+  public growThreads: Array<number>;
 
   public restarting = true;
   public hackType: HackType;
 
   public reserved: boolean;
-  public reservedThreads = 0;
+  public reservedMem = 0;
   public claimed: boolean;
 
   public commPortWrapper: PortWrapper;
@@ -57,8 +60,12 @@ export class Resource {
     private readonly logger: Logger,
     public readonly server: string,
     public memOffset: number,
-    public readonly original = true,
+    public readonly dummy = false,
   ) {
+    if (dummy) {
+      return;
+    }
+
     this.reqLevel = ns.getServerRequiredHackingLevel(server);
     this.minSecurity = ns.getServerMinSecurityLevel(server);
     this.maxMoney = ns.getServerMaxMoney(server);
@@ -90,13 +97,28 @@ export class Resource {
       this.money = this.ns.getServerMoneyAvailable(server);
 
       const hackTime = this.ns.getHackTime(server);
-      this.times = [hackTime * WeakenTimeMulti, hackTime * GrowTimeMulti, hackTime, 1];
+      this.times = [hackTime * WeakenTimeMulti, hackTime * GrowTimeMulti, hackTime, SharePowerTime];
       this.rate = this.ns.hackAnalyze(server);
       this.growth = this.ns.getServerGrowth(server);
     } else {
-      this.times = [0, 0, 0, 0];
+      this.times = [0, 0, 0, SharePowerTime];
       this.rate = 0;
       this.growth = 0;
+    }
+  }
+
+  public fillGrowThreads(server: Server, player: Player) {
+    this.growThreads = new Array<number>(HackBatchPercents.length);
+    let lastThreads = 0;
+    for (let i = HackBatchPercents.length - 1; i >= 0; i--) {
+      this.growThreads[i] = searchGrowthThreads(
+        this.ns,
+        server,
+        player,
+        HackBatchPercents[i],
+        lastThreads,
+      );
+      lastThreads = this.growThreads[i];
     }
   }
 
@@ -104,33 +126,33 @@ export class Resource {
     return !this.claimed;
   }
 
-  public reserve(threads: number) {
+  public reserve(threads: number, hackType: HackType) {
     this.reserved = true;
-    this.reservedThreads += threads;
+    this.reservedMem += HackTypeToMemMap[hackType] * threads;
   }
 
-  public freeUp(threads: number) {
+  public freeUp(threads: number, hackType: HackType) {
     this.reserved = false;
-    this.reservedThreads -= threads;
+    this.reservedMem -= HackTypeToMemMap[hackType] * threads;
   }
 
   public claim(hackType: HackType) {
     this.hackType = hackType;
     this.reserved = false;
-    this.reservedThreads = 0;
+    this.reservedMem = 0;
     this.claimed = true;
   }
 
   public release() {
     this.claimed = false;
     this.reserved = false;
-    this.reservedThreads = 0;
+    this.reservedMem = 0;
   }
 
   public startScripts() {
-    if (!this.restarting) return;
+    if (!this.restarting) return -1;
     this.restarting = false;
-    this.ns.exec(
+    return this.ns.exec(
       HackTypeToScript[this.hackType],
       this.server,
       this.threads[this.hackType],
@@ -197,4 +219,22 @@ export class Resource {
   private normalizeMemory(mem: number): number {
     return Number(mem.toFixed(2));
   }
+}
+
+// TODO: add binary search
+// TODO: cores
+function searchGrowthThreads(ns: NS, server: Server, player: Player, percent: number, threads = 1) {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const newMoney = getGrowth(ns, server, player, threads, percent);
+    if (newMoney >= server.moneyMax) break;
+    threads++;
+  }
+
+  return threads;
+}
+
+function getGrowth(ns: NS, server: Server, player: Player, threads: number, percent: number) {
+  const serverGrowth = ns.formulas.hacking.growPercent(server, threads, player);
+  return ((1 - percent) * server.moneyMax + 1 + threads) * serverGrowth;
 }

@@ -3,7 +3,7 @@ import type { ClusterData } from "$src/servers/clusters/data/clusterData";
 import type { ClusterGroup } from "$src/servers/clusters/data/clusterGroup";
 import type { HackJob } from "$src/servers/hack/hackJob";
 import type { Target } from "$src/servers/target";
-import type { Logger } from "$src/utils/logger";
+import type { Logger } from "$src/utils/logger/logger";
 import { ShorthandNotationSchema } from "$src/utils/shorthand-notation";
 
 export class ClusterRunner {
@@ -77,9 +77,10 @@ export class ClusterRunner {
         this.target.resource.money,
       )}/${ShorthandNotationSchema.usd.convert(this.target.resource.maxMoney)}`,
       period: ShorthandNotationSchema.time.convert(period),
-      security: `${this.target.resource.security}(${this.target.resource.minSecurity})`,
+      security: `${Math.ceil(this.target.resource.security)}(${this.target.resource.minSecurity})`,
       threads: this.target.hackJob.threads,
-      runs: this.target.hackJob.runs,
+      runs: this.clusterData.runs,
+      percent: this.target.hackJob.percent,
     });
   }
 }

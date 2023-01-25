@@ -26,3 +26,5 @@ export const HackTypeToMemMap = {
   [HackType.Hack]: 1.7,
   [HackType.SharePower]: 4,
 };
+
+export type HackTypesData = [number, number, number, number];

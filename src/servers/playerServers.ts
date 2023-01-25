@@ -1,15 +1,15 @@
 import { MaxServerSize, PlayerServerPrefix } from "$src/constants";
+import type { RunnerModule } from "$src/runner/runner";
 import type { Servers } from "$src/servers/servers";
 import type { NS } from "$src/types/gameTypes";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
-import type { Logger } from "$src/utils/logger";
+import type { Logger } from "$src/utils/logger/logger";
 
-export class PlayerServers {
+export class PlayerServers implements RunnerModule {
   private playerServerCount = 0;
   private readonly playerServerMaxCount: number;
   private playerServerCursor = 0;
   private playerServerSize = 8;
-  private playerServerMaxSize = MaxServerSize;
 
   private initialised = false;
   private lastRun = 0;
@@ -18,14 +18,16 @@ export class PlayerServers {
     private readonly ns: NS,
     private readonly logger: Logger,
     private readonly servers: Servers,
+    private readonly playerServerMaxSize: number,
   ) {
     this.playerServerMaxCount = ns.getPurchasedServerLimit();
+    this.playerServerMaxSize = Math.min(playerServerMaxSize, MaxServerSize);
   }
 
-  public run() {
+  public async run() {
     const now = Date.now();
     // only run this every ~5sec
-    if (now - this.lastRun < 5000) return [];
+    if (now - this.lastRun < 5000) return;
 
     if (!this.initialised) this.init();
 
@@ -45,9 +47,6 @@ export class PlayerServers {
   private init() {
     this.initialised = true;
 
-    // only buy upto 8 orders of size of home.
-    this.playerServerMaxSize = Math.min(this.playerServerMaxSize, this.playerServerSize << 8);
-
     for (const resource of this.servers.resources) {
       if (!resource.server.startsWith(PlayerServerPrefix)) continue;
       const num = Number(resource.server.replace(PlayerServerPrefix, "")) + 1;
@@ -61,7 +60,6 @@ export class PlayerServers {
     this.logger.log("PlayerServers", {
       playerServerCount: this.playerServerCount,
       playerServerSize: this.playerServerSize,
-      playerServerMaxSize: this.playerServerMaxSize,
     });
   }
 
@@ -76,6 +74,7 @@ export class PlayerServers {
       PlayerServerPrefix + this.playerServerCount,
       this.playerServerSize,
     );
+    if (!newServerName) return false;
     this.playerServerCount++;
     copyScriptToServer(this.ns, newServerName);
     this.servers.newCrackedServers([newServerName]);

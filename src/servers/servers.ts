@@ -1,12 +1,11 @@
-import { EarlyGameRunner } from "$src/constants";
+import { GameStageToRunner, getGameStage } from "$src/gameStage/gameStage";
 import { EventEmitter } from "$src/utils/eventEmitter";
 import type { NS } from "../types/gameTypes";
 import { binaryInsert } from "../utils/arrayUtils";
 import { copyScriptToServer } from "../utils/copyScriptsToServer";
 import { isPlayerServer } from "../utils/isPlayerServer";
-import { Logger } from "../utils/logger";
+import { Logger } from "../utils/logger/logger";
 import type { Cracks } from "./cracks";
-import { ListOfCracks } from "./cracks";
 import { Resource } from "./resource";
 import { Target } from "./target";
 
@@ -51,17 +50,11 @@ export class Servers extends EventEmitter<ServersEvents> {
   }
 
   public newCrackedServers(newServers: Array<string>) {
-    if (newServers.length > 0) {
-      this.logger.info("NewServers", {
-        cracks: this.cracks.cracks.map((crack) => ListOfCracks[crack]),
-        newServers,
-      });
-    }
     for (const crackedServer of newServers) {
       let offset = 0;
       // add memory offsets
       if (crackedServer === this.runnerServer) {
-        offset = this.ns.getScriptRam(EarlyGameRunner);
+        offset = this.ns.getScriptRam(GameStageToRunner[getGameStage(this.ns)]);
       }
       this.newResource(crackedServer, offset);
     }
@@ -79,6 +72,22 @@ export class Servers extends EventEmitter<ServersEvents> {
     }
   }
 
+  public addTarget(target: Target) {
+    this.targetsMap[target.resource.server] = target;
+    binaryInsert(
+      this.targets,
+      target.resource.server,
+      (mid, ele) => this.targetsMap[ele].score - this.targetsMap[mid].score,
+    );
+    this.emit("newTarget", target);
+  }
+
+  public addResource(resource: Resource) {
+    this.resourcesMap[resource.server] = resource;
+    this.addToResources(resource);
+    this.emit("newResource", resource);
+  }
+
   public log() {
     for (const resource of this.resources) {
       resource.log();
@@ -90,9 +99,7 @@ export class Servers extends EventEmitter<ServersEvents> {
 
   private newResource(serverName: string, memOffset: number) {
     const resource = new Resource(this.ns, this.logger, serverName, memOffset);
-    this.resourcesMap[serverName] = resource;
-    this.addToResources(resource);
-    this.emit("newResource", resource);
+    this.addResource(resource);
 
     if (isPlayerServer(serverName)) {
       return;
@@ -155,14 +162,8 @@ export class Servers extends EventEmitter<ServersEvents> {
     // non hackable servers
     if (this.resourcesMap[serverName].maxMoney === 0) return undefined;
     const target = new Target(this.ns, this.logger, this.resourcesMap[serverName]);
-    this.targetsMap[serverName] = target;
     target.fill();
-    binaryInsert(
-      this.targets,
-      serverName,
-      (mid, ele) => this.targetsMap[ele].score - this.targetsMap[mid].score,
-    );
-    this.emit("newTarget", target);
+    this.addTarget(target);
   }
 
   private addToResources(resource: Resource) {

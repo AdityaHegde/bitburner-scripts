@@ -9,7 +9,7 @@ import { ResourceLogMessage } from "$src/servers/resource";
 import type { TargetLog } from "$src/servers/target";
 import { TargetLogMessage } from "$src/servers/target";
 import { binarySearch } from "$src/utils/arrayUtils";
-import type { JsonLog } from "$src/utils/logger";
+import type { JsonLog } from "$src/utils/logger/logFormatter";
 import type { Patch } from "immer";
 import { enablePatches, produce } from "immer";
 

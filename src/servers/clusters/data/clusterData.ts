@@ -1,9 +1,9 @@
-import type { ReferenceHackData } from "$src/ports/portPacket";
+import type { ReferenceHackData } from "$src/ports/packets/hackRequestPacket";
 import { ClusterGroup } from "$src/servers/clusters/data/clusterGroup";
 import { HackType } from "$src/servers/hack/hackTypes";
 import type { Resource } from "$src/servers/resource";
 import { binaryInsert } from "$src/utils/arrayUtils";
-import type { Logger } from "$src/utils/logger";
+import type { Logger } from "$src/utils/logger/logger";
 
 export class ClusterData {
   public threads = 0;
@@ -11,46 +11,33 @@ export class ClusterData {
   public sortedResources: Array<Resource> = [];
   public groups: Array<ClusterGroup> = [new ClusterGroup()];
   public runs: number;
-
-  private splitResources = new Map<string, Array<Resource>>();
-
-  private startedCount = 0;
-  private returnedCount = 0;
-  private stoppedCount = 0;
+  public startedCount = 0;
+  public returnedCount = 0;
+  public stoppedCount = 0;
+  private serverNameMap = new Map<string, Resource>();
 
   public constructor(private readonly logger: Logger) {}
 
-  public add(resource: Resource) {
+  public add(resource: Resource, skipMerge = false) {
     this.threads += resource.threads[HackType.Grow];
-    binaryInsert(this.sortedResources, resource, (mid, ele) => ele.mem - mid.mem);
+    if (
+      !skipMerge &&
+      this.serverNameMap.has(resource.server) &&
+      this.serverNameMap.get(resource.server) !== resource
+    ) {
+      this.serverNameMap.get(resource.server).merge(resource);
+    } else {
+      this.serverNameMap.set(resource.server, resource);
+      binaryInsert(this.sortedResources, resource, (mid, ele) => ele.mem - mid.mem);
+    }
   }
 
   public remove(resource: Resource, prevThreads = resource.threads[HackType.Grow]) {
     const index = this.sortedResources.indexOf(resource);
     if (index === -1) return;
     this.threads -= prevThreads;
+    this.serverNameMap.delete(resource.server);
     this.sortedResources.splice(index, 1);
-  }
-
-  public addSplitResourcePairs(res1: Resource, res2: Resource) {
-    if (!this.splitResources.has(res1.server)) {
-      this.splitResources.set(res1.server, [res1, res2]);
-    } else {
-      this.splitResources.get(res1.server).push(res2);
-    }
-  }
-
-  public mergeSplitResources() {
-    for (const splitResources of this.splitResources.values()) {
-      const prevThreads = splitResources[0].threads[HackType.Weaken];
-      for (let i = 1; i < splitResources.length; i++) {
-        this.remove(splitResources[i]);
-        splitResources[0].merge(splitResources[i]);
-      }
-      this.remove(splitResources[0], prevThreads);
-      this.add(splitResources[0]);
-    }
-    this.splitResources.clear();
   }
 
   public reset() {

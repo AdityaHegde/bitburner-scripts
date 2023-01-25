@@ -4,7 +4,7 @@ export class Heap<Item, Key = string> {
 
   /**
    * @constructor
-   * @param {Function} compareFunction Return value > 0 to have a above b in the heap.
+   * @param {Function} compareFunction Return value > 0 to have `a` above `b` in the heap.
    * @param {Function} keyGetter Returns the key to use in the map. Defaults to using the element as key.
    */
   constructor(

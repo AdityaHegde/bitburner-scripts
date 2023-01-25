@@ -1,4 +1,9 @@
-import { BatchOperationBuffer, BatchOperationStartBuffer, HackGroupSize } from "$src/constants";
+import {
+  BatchOperationBuffer,
+  BatchOperationStartBuffer,
+  HackGroupSize,
+  HackPercent,
+} from "$src/constants";
 import { HackType, HackTypeToMemMap } from "$src/servers/hack/hackTypes";
 import type { Resource } from "$src/servers/resource";
 import type { NS } from "$src/types/gameTypes";
@@ -21,27 +26,34 @@ export enum HackJobState {
 
 export class HackJob {
   public state: HackJobState;
-  public readonly memNeeded = 0;
+  public memNeeded = 0;
   public readonly totalThreads = 0;
 
   public readonly hackIdx: number = -1;
+  public readonly growIdx: number = -1;
   public readonly maxMem: number = 0;
 
   public synced: boolean;
   public ratio: number;
   public end: number;
   public period: number;
+  public percent = HackPercent;
+  public scoreOverride: number;
 
   public constructor(
     public readonly operations: Array<HackType>,
     public readonly threads: Array<number>,
     public runs: number,
     public readonly countMulti: Array<number> = new Array(operations.length).fill(1),
+    public readonly searchFromEnd = false,
   ) {
     for (let i = 0; i < operations.length; i++) {
       this.memNeeded += Number((HackTypeToMemMap[operations[i]] * threads[i]).toFixed(2));
       this.totalThreads += this.threads[i];
+
       if (operations[i] === HackType.Hack) this.hackIdx = i;
+      if (operations[i] === HackType.Grow) this.growIdx = i;
+
       if (HackTypeToMemMap[operations[i]] > this.maxMem) {
         this.maxMem = HackTypeToMemMap[operations[i]];
       }
@@ -51,8 +63,9 @@ export class HackJob {
 
   public getScore(resource: Resource): number {
     return (
+      this.scoreOverride ??
       (resource.maxMoney * this.threads[this.hackIdx] * resource.rate) /
-      (this.memNeeded * resource.times[HackType.Grow])
+        (this.memNeeded * resource.times[HackType.Grow])
     );
   }
 
@@ -95,6 +108,10 @@ export class HackJob {
         this.threads[i] = Math.ceil(this.threads[i] / ratio);
       }
     }
+    this.memNeeded = this.threads.reduce(
+      (mem, threads, idx) => mem + threads * HackTypeToMemMap[this.operations[idx]],
+      0,
+    );
 
     if (this.runs !== -1) {
       this.runs = Math.ceil(this.runs * ratio);

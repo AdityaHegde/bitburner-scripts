@@ -1,16 +1,15 @@
-import { EarlyGameRunner } from "../constants";
 import type { Metadata } from "../metadata/metadata";
 import { saveMetadataOnServer } from "../metadata/metadata";
 import type { NS } from "../types/gameTypes";
 import { killScriptIfRunning } from "../utils/killScriptIfRunning";
 
-export async function startEarlyGameRunner(ns: NS, metadata: Metadata) {
+export async function startEarlyGameRunner(ns: NS, metadata: Metadata, runnerScript: string) {
   const runnerServer = metadata.runnerServer;
   // copy BatchOrchestratorScript to make sure it exists
-  ns.scp(EarlyGameRunner, runnerServer);
+  ns.scp(runnerScript, runnerServer);
 
   // kill the hack orchestration script
-  killScriptIfRunning(ns, runnerServer, EarlyGameRunner);
+  killScriptIfRunning(ns, runnerServer, runnerScript);
 
   // copy over the metadata
   const savePID = saveMetadataOnServer(ns, metadata, runnerServer);
@@ -20,5 +19,5 @@ export async function startEarlyGameRunner(ns: NS, metadata: Metadata) {
   }
   await ns.sleep(100);
   // start the orchestration script
-  ns.exec(EarlyGameRunner, runnerServer);
+  ns.exec(runnerScript, runnerServer);
 }

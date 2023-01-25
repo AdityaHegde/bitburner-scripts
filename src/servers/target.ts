@@ -2,15 +2,16 @@ import { NoodlesScoreCutoff, NoodlesScoreOffset } from "$src/constants";
 import { HackJobFactory } from "$src/servers/hack/hackJobFactory";
 import { HackType } from "$src/servers/hack/hackTypes";
 import type { NS } from "../types/gameTypes";
-import type { Logger } from "../utils/logger";
+import type { Logger } from "../utils/logger/logger";
 import type { HackJob, HackJobLog } from "./hack/hackJob";
-import type { Resource } from "./resource";
+import { Resource } from "./resource";
 
 export enum TargetState {
   New,
   Weakening,
   Growing,
   Hacking,
+  SharingPower,
 }
 
 export enum TargetType {
@@ -41,9 +42,23 @@ export class Target {
     public readonly ns: NS,
     private readonly logger: Logger,
     public readonly resource: Resource,
+    private readonly dummy = false,
   ) {}
 
+  public static getSharePowerTarget(ns: NS, logger: Logger) {
+    const resource = new Resource(ns, logger, "SharePower", 0, true);
+    const target = new Target(ns, logger, resource, true);
+    target.type = TargetType.Sharing;
+    target.state = TargetState.SharingPower;
+    return target;
+  }
+
   public fill() {
+    if (this.dummy) {
+      this.score = this.hackJob?.scoreOverride ?? 0;
+      return;
+    }
+
     const hackTypeSet = HackJobFactory.HackGrowWeaken(this.ns, this.resource);
     this.ratios = [
       hackTypeSet.threads[HackType.Hack],
@@ -55,23 +70,6 @@ export class Target {
         ? NoodlesScoreOffset
         : 1;
     this.score = hackTypeSet.getScore(this.resource) * 100 + scoreOffset;
-  }
-
-  public calculateHackTypeSet() {
-    if (this.hackJob?.runs === -1 || this.hackJob?.runs > 0) return;
-    this.hackJob = undefined;
-
-    if (this.resource.security > this.resource.minSecurity) {
-      this.hackJob = HackJobFactory.Weaken(this.ns, this.resource);
-      this.state = TargetState.Weakening;
-    } else if (this.resource.money < this.resource.maxMoney) {
-      this.hackJob = HackJobFactory.GrowWeaken(this.ns, this.resource);
-      this.state = TargetState.Growing;
-    } else {
-      this.hackJob = HackJobFactory.EarlyHackGrowWeaken(this.ns, this.resource);
-      this.state = TargetState.Hacking;
-    }
-    this.hackJob.setPeriod(this.resource);
   }
 
   public log() {

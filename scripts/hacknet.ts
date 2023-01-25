@@ -1,6 +1,6 @@
+import { Logger } from "$src/utils/logger/logger";
 import type { NS } from "../src/types/gameTypes";
 import { Heap } from "../src/utils/heap";
-import { Logger } from "../src/utils/logger";
 
 enum UpgradeTypes {
   Purchase,

@@ -7,9 +7,8 @@ export type Metadata = {
 };
 
 export function newMetadata(ns: NS): Metadata {
-  const playerServers = ns.getPurchasedServers();
   return {
-    newServers: ["home", ...playerServers],
+    newServers: ["home", ...ns.getPurchasedServers()],
   };
 }
 

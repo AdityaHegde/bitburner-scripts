@@ -1,13 +1,7 @@
 <script>
-  import TargetsDisplay from "$components/target/TargetsDisplay.svelte";
-  import Resources from "$components/resource/Resources.svelte";
-
-  let showResource = false;
+  function onBtnClick() {
+    alert("HI");
+  }
 </script>
 
-<button on:click={() => showResource = !showResource}>Show Resources</button>
-
-{#if showResource}
-  <Resources />
-{/if}
-<TargetsDisplay />
+<button on:click={onBtnClick}>Hi</button>

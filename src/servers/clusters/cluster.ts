@@ -1,4 +1,4 @@
-import type { ReferenceHackData } from "$src/ports/portPacket";
+import type { ReferenceHackData } from "$src/ports/packets/hackRequestPacket";
 import type { ClusterAssigner } from "$src/servers/clusters/assigner/clusterAssigner";
 import { ClusterData } from "$src/servers/clusters/data/clusterData";
 import type { ClusterGroup } from "$src/servers/clusters/data/clusterGroup";
@@ -9,7 +9,7 @@ import type { Servers } from "$src/servers/servers";
 import type { Target } from "$src/servers/target";
 import type { NS } from "$src/types/gameTypes";
 import { EventEmitter } from "$src/utils/eventEmitter";
-import type { Logger } from "$src/utils/logger";
+import type { Logger } from "$src/utils/logger/logger";
 
 export const ClusterLogMessage = "Cluster";
 export type ClusterLog = {
@@ -66,9 +66,6 @@ export class Cluster extends EventEmitter<ClusterEvents> {
   public clear() {
     this.state = ClusterState.New;
     this.assigner.clear(true);
-    // this.logger.log("Clearing", {
-    //   target: this.target.resource.server,
-    // });
   }
 
   public async run() {
@@ -92,27 +89,16 @@ export class Cluster extends EventEmitter<ClusterEvents> {
   }
 
   public async runGroup(group: ClusterGroup) {
-    // this.logger.log("ClusterGroupRunning", {
-    //   target: this.target.resource.server,
-    //   rate: this.target.resource.rate,
-    // });
     return this.runner.runClusterGroup(group);
   }
 
   public serverStarted(resource: Resource) {
     if (!this.data.resourceStarted(resource)) return;
-    this.logger.log("ClusterStarted", {
-      target: this.target.resource.server,
-      count: this.target.hackJob.runs,
-    });
     this.emit("started");
   }
 
   public serverReturned(resource: Resource, ref: ReferenceHackData) {
     if (!this.data.resourceReturned(resource, ref)) return;
-    // this.logger.log("ClusterGroupReturned", {
-    //   target: this.target.resource.server,
-    // });
     this.target.resource.fillEphemeral();
 
     if (this.data.runs !== 1 && this.state !== ClusterState.Stopping) {
@@ -133,9 +119,6 @@ export class Cluster extends EventEmitter<ClusterEvents> {
     for (const resource of this.data.sortedResources) {
       await resource.stopScripts();
     }
-    this.logger.log("Stopping", {
-      target: this.target.resource.server,
-    });
   }
 
   public serverStopped(resource: Resource) {
@@ -144,8 +127,6 @@ export class Cluster extends EventEmitter<ClusterEvents> {
       target: this.target.resource.server,
     });
 
-    // merge all split resources that were split to accommodate partial threads
-    this.data.mergeSplitResources();
     this.state = ClusterState.Stopped;
     this.emit("stopped");
   }

@@ -1,3 +1,4 @@
+import type { ServerData } from "$src/servers/serverData";
 import type { NS } from "../types/gameTypes";
 
 export const ListOfCracks: Array<string> = [
@@ -24,21 +25,17 @@ export class Cracks {
     }
   }
 
-  public crackNPCServer(server: string): boolean {
-    const requiredPorts = this.ns.getServerNumPortsRequired(server);
+  public crackNPCServer(serverData: ServerData): boolean {
+    if (serverData.requiredPorts > this.cracks.length) return false;
 
-    if (requiredPorts > this.cracks.length) return false;
-
-    this.runCracks(server, requiredPorts);
-    this.ns.nuke(server);
+    this.runCracks(serverData.name, serverData.requiredPorts);
+    this.ns.nuke(serverData.name);
 
     return true;
   }
 
-  public runCracks(server: string, requiredPorts: number) {
+  private runCracks(server: string, requiredPorts: number) {
     for (let i = 0; i < requiredPorts && i < this.cracks.length; i++) {
-      // using the map CrackTypeToMethod to run the command does not add to script mem
-      // hence using the methods directly to not exploit
       switch (this.cracks[i]) {
         case 0:
           this.ns.brutessh(server);

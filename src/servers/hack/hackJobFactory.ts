@@ -23,7 +23,7 @@ export class HackJobFactory {
   }
 
   public static HackGrowWeaken(ns: NS, resource: Resource): HackJob {
-    const hacks = Math.ceil((1 - HackPercent) / resource.rate);
+    const hacks = Math.ceil(HackPercent / resource.rate);
     const grows = Math.ceil(
       ns.growthAnalyze(
         resource.server,
@@ -42,7 +42,7 @@ export class HackJobFactory {
   public static EarlyHackGrowWeaken(
     ns: NS,
     resource: Resource,
-    hacks = Math.ceil((1 - HackPercent) / resource.rate),
+    hacks = Math.ceil(HackPercent / resource.rate),
   ): HackJob {
     const hacksPerRun = Math.floor(hacks / HackGroupSize);
     hacks = hacksPerRun * HackGroupSize;
@@ -60,5 +60,12 @@ export class HackJobFactory {
       -1,
       [HackGroupSize, 1, 1],
     );
+  }
+
+  public static SharePower(ns: NS, freeThreads: number) {
+    const threads = 2 ** (Math.floor(Math.log2(freeThreads)) - 1);
+    const hackJob = new HackJob([HackType.SharePower], [threads], -1, [1], true);
+    hackJob.scoreOverride = 0.01;
+    return hackJob;
   }
 }

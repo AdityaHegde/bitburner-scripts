@@ -1,6 +1,6 @@
 import { asyncWait } from "$server/utils/asyncUtils";
+import { getEarlyGameRunner } from "$src/runner/runnerFactories";
 import { describe, it } from "vitest";
-import { getEarlyGameRunner } from "../scripts/earlyGame";
 import { getNSMock } from "./mocks/mockFactory";
 
 describe("earlyGame", () => {

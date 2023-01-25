@@ -8,7 +8,7 @@ import { MetadataFile } from "$src/constants";
 import type { Metadata } from "$src/metadata/metadata";
 import type { HackEntryLog } from "$src/servers/hack/wrapAction";
 import { HackBegMessage, HackEndMessage } from "$src/servers/hack/wrapAction";
-import { HackFile, ServersLogFile } from "$src/utils/logger";
+import { HackFile, ServersLogFile } from "$src/utils/logger/loggerConstants";
 
 export class Game {
   private metadata?: Metadata;
