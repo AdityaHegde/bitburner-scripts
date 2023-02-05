@@ -8,6 +8,8 @@ export const { update, set, subscribe } = writable<HackEntriesState>({
   min: 0,
   max: 0,
   entries: {},
+  batches: {},
+  targets: {},
 });
 
 const hackEntriesReducers = {

@@ -34,37 +34,28 @@ function waysToSumCore(num: number, maxPart: number, cache: Map<[number, number]
 export const waysToSum: SolutionFunction<number, number> = (input) =>
   waysToSumCore(input, input - 1, new Map());
 
-function waysToSumLimitedCore(
-  num: number,
-  allowedNumbers: Array<number>,
-  maxIndex: number,
-  cache: Map<[number, number], number>,
-): number {
-  if (num === 1) return 0;
-  if (allowedNumbers[maxIndex] === 1) return 1;
-  if (cache.has([num, maxIndex])) return cache.get([num, maxIndex]);
-
-  let count = 1;
-  // loop through the allowed numbers
-  for (let i = 0; i <= maxIndex; i++) {
-    const allowedNumber = allowedNumbers[maxIndex];
-    if (allowedNumber > num) break;
-
-    // keep taking away `allowedNumber` until num is <= 0
-    let tempNum = num - allowedNumber;
-    while (tempNum > 0) {
-      // at every step
-      count += waysToSumLimitedCore(tempNum, allowedNumbers, i - 1, cache);
-      tempNum -= allowedNumber;
-    }
-  }
-
-  cache.set([num, maxIndex], count);
-
-  return count;
-}
-
 export const waysToSumLimited: SolutionFunction<[number, Array<number>], number> = ([
   num,
   allowedNumbers,
-]) => waysToSumLimitedCore(num, allowedNumbers, allowedNumbers.length - 1, new Map());
+]) => {
+  const cache = new Array<Array<number>>(num + 1)
+    .fill([])
+    .map(() => new Array<number>(allowedNumbers.length));
+
+  // num = 0
+  for (let i = 0; i < allowedNumbers.length; i++) {
+    cache[0][i] = 1;
+  }
+
+  for (let curNum = 1; curNum <= num; curNum++) {
+    for (let j = 0; j < allowedNumbers.length; j++) {
+      cache[curNum][j] =
+        // When `allowedNumbers[j]` is taken out of curNum
+        (curNum - allowedNumbers[j] >= 0 ? cache[curNum - allowedNumbers[j]][j] : 0) +
+        // When we try taking out `allowedNumbers[j-1]` keeping curNum as is
+        (j >= 1 ? cache[curNum][j - 1] : 0);
+    }
+  }
+
+  return cache[num][allowedNumbers.length - 1];
+};

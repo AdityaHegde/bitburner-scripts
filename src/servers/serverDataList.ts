@@ -1,14 +1,18 @@
 import type { Cracks } from "$src/servers/cracks";
-import { ServerData } from "$src/servers/serverData";
+import { ServerData, SharePowerDummyServer } from "$src/servers/serverData";
 import type { NS, Player } from "$src/types/gameTypes";
 import { binaryInsert } from "$src/utils/arrayUtils";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
 import { EventEmitter } from "$src/utils/eventEmitter";
 import { isPlayerServer } from "$src/utils/isPlayerServer";
+import { ResourceList } from "$src/servers/resourceList";
+import { HackLevelMulti } from "$src/constants";
+import type { Logger } from "$src/utils/logger/logger";
 
 export type ServerDataListEvents = {
   newResource: (serverData: ServerData) => void;
   resourceUpdated: (serverData: ServerData) => void;
+  updateTargets: () => void;
   newTarget: (serverData: ServerData) => void;
 };
 
@@ -16,41 +20,65 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
   public readonly allServerData: Array<ServerData>;
   public readonly serverDataNameMap: Record<string, ServerData> = {};
   public possibleTargets = new Array<ServerData>();
-  public readonly resources = new Array<ServerData>();
-  public readonly targets = new Array<ServerData>();
+  public readonly resourceList: ResourceList;
 
   private lastLevel: number;
   private serverIndex = 0;
 
   public constructor(
     private readonly ns: NS,
+    private readonly logger: Logger,
     private readonly cracks: Cracks,
     public readonly allServers: Array<string>,
   ) {
     super();
 
+    this.resourceList = new ResourceList(logger);
     this.allServerData = new Array<ServerData>(allServers.length);
     for (let i = 0; i < allServers.length; i++) {
       const serverData = new ServerData(ns, allServers[i]);
       this.allServerData[i] = serverData;
       this.serverDataNameMap[allServers[i]] = serverData;
     }
+
+    for (let i = 0; i < allServers.length; i++) {
+      const serverData = this.allServerData[i];
+      for (const link of ns.scan(serverData.name)) {
+        serverData.links.set(link, this.serverDataNameMap[link]);
+      }
+    }
+  }
+
+  public init() {
+    this.emit("newTarget", new ServerData(this.ns, SharePowerDummyServer));
   }
 
   public process() {
     const player = this.ns.getPlayer();
 
     if (player.skills.hacking !== this.lastLevel) {
-      for (const serverData of this.targets) {
-        serverData.updateEphemeral();
-      }
+      this.emit("updateTargets");
       this.lastLevel = player.skills.hacking;
     }
 
     for (const serverData of this.nukeServers()) {
       this.handleNewCrackedServer(player, serverData);
     }
-    this.updateTargets();
+    this.updateTargets(player);
+  }
+
+  public addServer(serverName: string) {
+    const serverData = new ServerData(this.ns, serverName);
+    this.allServerData.push(serverData);
+    this.allServers.push(serverName);
+    this.serverDataNameMap[serverName] = serverData;
+    this.handleNewCrackedServer(this.ns.getPlayer(), serverData);
+  }
+
+  public updateServer(serverName: string) {
+    const serverData = this.serverDataNameMap[serverName];
+    this.resourceList.update(serverData);
+    this.emit("resourceUpdated", serverData);
   }
 
   private nukeServers(): Array<ServerData> {
@@ -77,17 +105,18 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
     return cracked;
   }
 
-  private updateTargets() {
+  private updateTargets(player: Player) {
     let i = 0;
     // move new targets
     for (; i < this.possibleTargets.length; i++) {
       const targetServer = this.possibleTargets[i];
-      if (this.ns.getHackingLevel() >= targetServer.reqLevel) {
+      if (Math.ceil(player.skills.hacking / HackLevelMulti) >= targetServer.reqLevel) {
+        targetServer.updateEphemeral();
         if (targetServer.rate === 0) {
           // un-hackable servers should be ignored
           continue;
         }
-        this.addToTargets(targetServer);
+        this.emit("newTarget", targetServer);
       } else {
         break;
       }
@@ -100,23 +129,18 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
 
   private handleNewCrackedServer(player: Player, serverData: ServerData) {
     if (serverData.maxMem > 0) {
-      this.resources.push(serverData);
+      this.resourceList.add(serverData);
       this.emit("newResource", serverData);
     }
 
     if (isPlayerServer(serverData.name)) {
       return;
     }
-    if (player.skills.hacking >= serverData.reqLevel) {
-      this.addToTargets(serverData);
+    if (Math.ceil(player.skills.hacking / HackLevelMulti) >= serverData.reqLevel) {
+      if (serverData.rate > 0) this.emit("newTarget", serverData);
     } else {
       this.addToNewTargets(serverData);
     }
-  }
-
-  private addToTargets(serverData: ServerData) {
-    this.targets.push(serverData);
-    this.emit("newTarget", serverData);
   }
 
   private addToNewTargets(serverData: ServerData) {

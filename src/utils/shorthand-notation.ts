@@ -14,8 +14,8 @@ export class ShorthandNotationSchema {
     2,
   );
   public static diskSpace = new ShorthandNotationSchema(
-    ["", ..."KMT".split("")],
-    new Array(3).fill(1024),
+    ["", ..."KMGTP".split("")],
+    new Array(5).fill(1024),
     "",
     "B",
     2,

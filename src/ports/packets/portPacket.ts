@@ -1,13 +1,8 @@
 export enum PortPacketType {
-  HackActionData,
-  ServerStarted,
-  HackRequest,
-  HackResponse,
-  HackTiming,
-  StopHack,
-  HackStopped,
-  Exit,
+  BatchStarted,
+  ServerActionCompleted,
   Exited,
+  ScriptStopped,
 }
 
 export type PortPacket<Type extends PortPacketType, Rec> = {

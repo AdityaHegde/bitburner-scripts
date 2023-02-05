@@ -43,33 +43,32 @@ export const encodeHammingCode: SolutionFunction<number, string> = (input) => {
 };
 
 export const decodeHammingCode: SolutionFunction<string, string> = (input) => {
-  let num = 0;
-  let bitIndex = input.length - Math.ceil(Math.log2(input.length)) - 2;
   let parity = 0;
 
-  for (let i = 1; i < input.length; i++) {
-    if (input[i] === "1") {
+  // we have to do this instead of directly writing to a number because the output could be larger than MaxSafeInt
+  const bits = new Array(input.length);
+
+  for (let i = 0; i < input.length; i++) {
+    bits[i] = input[i] === "1" ? 1 : 0;
+    if (bits[i]) {
       parity ^= i;
     }
+  }
+
+  if (parity) {
+    bits[parity] = bits[parity] ? 0 : 1;
+  }
+
+  const nums = new Array<string>();
+
+  for (let i = 0; i < bits.length; i++) {
     const log = Math.log2(i);
     if (log === Math.floor(log)) {
       // if it is a parity bit position ignore
       continue;
     }
-    if (input[i] === "1") {
-      num |= 2 ** bitIndex;
-    }
-    bitIndex--;
+    nums.push(bits[i] ? "1" : "0");
   }
 
-  if (parity === 0) return "" + num;
-
-  const numBitCount = Math.ceil(Math.log2(num));
-  const effectiveIndex = parity - Math.ceil(Math.log2(parity)) - 1;
-  const correction = 2 ** (numBitCount - effectiveIndex - 1);
-  const bit = num & correction;
-  if (bit === 0) num += correction;
-  else num -= correction;
-
-  return "" + num;
+  return "" + parseInt(nums.join(""), 2);
 };

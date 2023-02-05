@@ -14,10 +14,23 @@ const testCasesV1 = [
   { input: 81, output: 18004326 },
 ];
 
-const testCasesV2 = [
+const testCasesV2: Array<{ input: [number, Array<number>]; output: number }> = [
+  {
+    input: [10, [2, 3, 4]],
+    output: 5,
+    // 2+2+2+2+2, 3+3+2+2, 4+2+2+2, 4+3+3, 4+4+2
+  },
+  {
+    input: [50, [2, 4, 5, 7, 8]],
+    output: 294,
+  },
+  {
+    input: [139, [2, 4, 5, 7, 8]],
+    output: 9850,
+  },
   {
     input: [139, [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 16, 17]],
-    output: 1000,
+    output: 11627085,
   },
 ];
 
@@ -33,7 +46,7 @@ describe("waysToSum", () => {
   describe("Version2", () => {
     for (const testCase of testCasesV2) {
       it(`waysToSumLimited(${testCase.input})`, () => {
-        expect(waysToSumLimited(testCase.input as any)).toBe(testCase.output);
+        expect(waysToSumLimited(testCase.input)).toBe(testCase.output);
       });
     }
   });

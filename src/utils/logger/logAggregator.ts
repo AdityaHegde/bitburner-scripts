@@ -1,40 +1,25 @@
-import { LogAggregationPort, PortWrapper } from "$src/ports/portWrapper";
-import type { NetscriptPort, NS } from "$src/types/gameTypes";
+import type { NS } from "$src/types/gameTypes";
 import { LogAppender } from "$src/utils/logger/logAppender";
-import type { JsonLog } from "$src/utils/logger/logFormatter";
 
-export class LogAggregator {
-  private ws = new WebSocket("ws://localhost:3002");
-  private portWrapper: PortWrapper;
-
-  private logs: Array<JsonLog> = [];
-
-  public constructor(private readonly ns: NS) {
-    this.portWrapper = new PortWrapper(ns, LogAggregationPort);
-  }
-
-  public async run() {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      while (!this.portWrapper.empty()) {
-        this.logs.push((await this.portWrapper.read(true)) as any);
-      }
-      this.ws.send(JSON.stringify(this.logs));
-      await this.ns.sleep(100);
-    }
-  }
-}
+export const LogsSize = 5;
 
 export class LogAggregationAppender extends LogAppender {
-  private portHandle: NetscriptPort;
+  private logs = new Array<string>();
+  private readonly ws: WebSocket;
 
   public constructor(private readonly ns: NS) {
     super();
-    this.portHandle = ns.getPortHandle(LogAggregationPort);
+    this.ws = eval("window").ws;
+    if (!this.ws) {
+      eval("window").ws = this.ws = new WebSocket("ws://localhost:3002");
+    }
   }
 
   public append(message: string): void {
-    this.portHandle.write(message);
+    this.logs.push(message);
+    if (this.logs.length < LogsSize || this.ws.readyState !== 1) return;
+    this.ws.send(`[${this.logs.join(",")}]`);
+    this.logs = [];
   }
 
   public flush(): void {

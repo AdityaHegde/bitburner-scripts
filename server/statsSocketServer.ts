@@ -13,31 +13,40 @@ export class StatsSocketServer {
     });
     this.wss.on("listening", () => console.log("Web socket started on 3002"));
     this.wss.on("connection", (ws) => {
-      this.ws = ws;
-      ws.send(
-        JSON.stringify({
-          type: "initData",
-          data: this.gameStatsCollector.state,
-        }),
-      );
-      ws.send(
-        JSON.stringify({
-          type: "initHackEntries",
-          data: this.gameStatsCollector.hackEntries,
-        }),
-      );
-      ws.on("close", () => {
-        this.ws = undefined;
+      ws.on("message", (data) => {
+        const dataStr = data.toString();
+        if (dataStr === "UI") {
+          this.ws = ws;
+          this.sendUIData();
+          return;
+        }
+
+        this.sendHackEntriesPatches(gameStatsCollector.addLogs(JSON.parse(data.toString())));
       });
     });
   }
 
-  public sendPatches(patches: Array<Patch>) {
-    if (!this.ws) return;
+  private sendUIData() {
+    this.ws.send(
+      JSON.stringify({
+        type: "initData",
+        data: this.gameStatsCollector.state,
+      }),
+    );
+    this.ws.send(
+      JSON.stringify({
+        type: "initHackEntries",
+        data: this.gameStatsCollector.hackEntries,
+      }),
+    );
+  }
+
+  private sendPatches(patches: Array<Patch>) {
+    if (!this.ws || !patches?.length) return;
     this.ws.send(JSON.stringify({ type: "gameDataPatches", data: patches }));
   }
 
-  public sendHackEntriesPatches(patches: Array<Patch>) {
+  private sendHackEntriesPatches(patches: Array<Patch>) {
     if (!this.ws || !patches?.length) return;
     this.ws.send(JSON.stringify({ type: "hackEntriesPatches", data: patches }));
   }

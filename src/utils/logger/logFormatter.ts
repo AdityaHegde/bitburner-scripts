@@ -32,7 +32,7 @@ export class ConsoleLogFormatter extends LogFormatter {
       }
     }
     return this.ns.sprintf(
-      LogLevelToColor[level] + "[%s] %s%s" + Colors.default,
+      LogLevelToColor[level] + "[%s] %s%s" + Colors.default + "\n",
       label,
       message,
       fieldsStrings,

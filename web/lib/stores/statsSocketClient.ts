@@ -9,7 +9,10 @@ try {
 }
 
 function setupSocket(ws: WebSocket) {
-  ws.addEventListener("open", () => console.log("Connected to server"));
+  ws.addEventListener("open", () => {
+    console.log("Connected to server");
+    ws.send("UI");
+  });
   ws.addEventListener("message", (event) => {
     try {
       const json = JSON.parse(event.data);

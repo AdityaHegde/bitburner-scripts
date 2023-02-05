@@ -26,6 +26,7 @@
     "@typescript-eslint/parser": "^5.48.2",
     "autoprefixer": "^10.4.13",
     "bitburner-filesync": "^1.1.5",
+    "daisyui": "^2.50.0",
     "eslint": "^8.22.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-svelte3": "^4.0.0",

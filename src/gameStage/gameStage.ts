@@ -11,5 +11,5 @@ export const GameStageToRunner: Record<GameStage, string> = {
 };
 
 export function getGameStage(ns: NS) {
-  return ns.fileExists("Formulas.exe", "home") ? GameStage.Mid : GameStage.Early;
+  return GameStage.Early;
 }

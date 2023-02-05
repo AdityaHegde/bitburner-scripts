@@ -1,7 +1,8 @@
 import { GrowTimeMulti, HackBatchPercents, SharePowerTime, WeakenTimeMulti } from "$src/constants";
-import type { ServerActionsData } from "$src/servers/server-actions/serverAction";
-import { ServerAction, ServerActionToMemMap } from "$src/servers/server-actions/serverAction";
+import type { ServerActionsData } from "$src/servers/server-actions/serverActionType";
 import type { NS, Player, Server } from "$src/types/gameTypes";
+
+export const SharePowerDummyServer = "share_power";
 
 export class ServerData {
   public readonly reqLevel: number;
@@ -21,19 +22,16 @@ export class ServerData {
 
   public money = 0;
   public rate: number;
+  public growth: number;
   public times: ServerActionsData = [0, 0, 0, 0];
   public growThreads: Array<number>;
 
-  public constructor(
-    private readonly ns: NS,
-    public readonly name: string,
-    public readonly dummy = false,
-  ) {
-    if (dummy) {
-      return;
-    }
+  public links = new Map<string, ServerData>();
 
-    const serverObject = ns.getServer();
+  public constructor(private readonly ns: NS, public readonly name: string) {
+    if (name === SharePowerDummyServer) return;
+
+    const serverObject = ns.getServer(name);
 
     this.reqLevel = serverObject.requiredHackingSkill;
     this.maxMoney = serverObject.moneyMax;
@@ -47,14 +45,16 @@ export class ServerData {
   }
 
   public updateMemory() {
-    const serverObject = this.ns.getServer();
+    const serverObject = this.ns.getServer(this.name);
     this.maxMem = serverObject.maxRam;
     this.mem = this.maxMem - this.claimedMem;
     this.cores = serverObject.cpuCores;
   }
 
   public updateEphemeral() {
-    const serverObject = this.ns.getServer();
+    if (this.name === SharePowerDummyServer) return;
+
+    const serverObject = this.ns.getServer(this.name);
 
     if (this.maxMoney > 0) {
       this.security = serverObject.hackDifficulty;
@@ -63,9 +63,11 @@ export class ServerData {
       const hackTime = this.ns.getHackTime(this.name);
       this.times = [hackTime * WeakenTimeMulti, hackTime * GrowTimeMulti, hackTime, SharePowerTime];
       this.rate = this.ns.hackAnalyze(this.name);
+      this.growth = serverObject.serverGrowth;
     } else {
       this.times = [0, 0, 0, SharePowerTime];
       this.rate = 0;
+      this.growth = 0;
     }
   }
 
@@ -82,32 +84,6 @@ export class ServerData {
       );
       lastThreads = this.growThreads[i];
     }
-  }
-
-  public reserve(threads: number, serverAction: ServerAction, fullReserve: boolean): number {
-    const possibleThreads = Math.floor(
-      (this.mem - this.reservedMem) / ServerActionToMemMap[serverAction],
-    );
-    if (possibleThreads < threads && fullReserve) return 0;
-    this.reservedMem += possibleThreads * ServerActionToMemMap[serverAction];
-    return possibleThreads;
-  }
-
-  public unReserve(threads: number, serverAction: ServerAction) {
-    this.reservedMem -= threads * ServerActionToMemMap[serverAction];
-  }
-
-  public claim(threads: number, serverAction: ServerAction) {
-    this.unReserve(threads, serverAction);
-    const mem = threads * ServerActionToMemMap[serverAction];
-    this.claimedMem += mem;
-    this.mem -= mem;
-  }
-
-  public unClaim(threads: number, serverAction: ServerAction) {
-    const mem = threads * ServerActionToMemMap[serverAction];
-    this.claimedMem -= mem;
-    this.mem += mem;
   }
 }
 

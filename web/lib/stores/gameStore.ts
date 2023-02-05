@@ -7,9 +7,7 @@ import { writable } from "svelte/store";
 enablePatches();
 
 export const { update, set, subscribe } = writable<GameState>({
-  resources: {},
   targets: {},
-  clusters: [],
 });
 
 const gameStateReducers = {

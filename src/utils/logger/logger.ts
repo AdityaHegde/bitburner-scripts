@@ -35,7 +35,7 @@ export class Logger {
   public log<Fields = Record<string, any>>(message: string, fields?: Fields, level?: number): void {
     fields ??= {} as any;
     this.appender.append(
-      this.formatter.format(this.label, level ?? LogLevel.Debug, message, fields) + "\n",
+      this.formatter.format(this.label, level ?? LogLevel.Debug, message, fields),
     );
   }
 

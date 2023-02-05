@@ -1,12 +1,8 @@
-import { getEarlyGameRunner } from "$src/runner/runnerFactories";
 import type { NS } from "$src/types/gameTypes";
+import { getEarlyGameOrchestrator } from "$src/runner/orchestratorFactories";
 
 export async function main(ns: NS) {
-  const runner = getEarlyGameRunner(ns);
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    await runner.run();
-    await ns.sleep(50);
-  }
+  const orchestrator = getEarlyGameOrchestrator(ns, ns.getScriptRam("earlyGame.js"));
+  orchestrator.init();
+  await orchestrator.start();
 }

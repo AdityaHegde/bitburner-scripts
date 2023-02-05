@@ -1,106 +1,84 @@
-import { HackEntriesWindow } from "$lib/stores/hackEntries";
-import { copyArrayToObject } from "$server/utils/deepCopy";
-import type { ClusterLog } from "$src/servers/clusters/cluster";
-import { ClusterLogMessage } from "$src/servers/clusters/cluster";
-import type { HackType } from "$src/servers/hack/hackTypes";
-import type { HackEntryLog } from "$src/servers/hack/wrapAction";
-import type { ResourceLog } from "$src/servers/resource";
-import { ResourceLogMessage } from "$src/servers/resource";
-import type { TargetLog } from "$src/servers/target";
-import { TargetLogMessage } from "$src/servers/target";
-import { binarySearch } from "$src/utils/arrayUtils";
 import type { JsonLog } from "$src/utils/logger/logFormatter";
 import type { Patch } from "immer";
 import { enablePatches, produce } from "immer";
+import type { ActionLogBase } from "$src/servers/server-actions/serverActionRunner";
+import {
+  ActionBatchEndedLabel,
+  ActionLeaderInitLabel,
+  ActionRunEndLabel,
+  ActionRunSkipLabel,
+  ActionRunStartLabel,
+  ActionRunWaitLabel,
+  ActionWaitForEndLabel,
+  ActionWaitForStartLabel,
+} from "$src/servers/server-actions/serverActionRunner";
+import { deepCopy } from "$server/utils/deepCopy";
+import type { WritableDraft } from "immer/dist/types/types-external";
+import { HackEntriesWindow } from "$lib/stores/hackEntries";
+import type { TargetLog } from "$src/runner/portCoordinator";
 
 enablePatches();
 
 export type HackEntriesState = {
   min: number;
   max: number;
-  entries: Record<string, Array<HackRun>>;
+  entries: Record<string, Record<number, Array<HackRun>>>;
+  batches: Record<string, HackBatch>;
+  targets: Record<string, TargetLog>;
 };
-export type HackRun = {
-  start: number;
-  end: number;
+export type HackRun = ActionLogBase & {
+  skipped: boolean;
+  startTime: number;
+  calcStartTime: number;
+  startDiff: number;
+  actualDiff: number;
+  endDiff: number;
+};
+export type HackBatch = {
   target: string;
-  servers: Array<string>;
-  hackType: HackType;
-  index: number;
+  starts: number;
+  ends: number;
   count: number;
+  hackTime: number;
+  endTime: number;
 };
 
 export type GameState = {
-  resources: Record<string, ResourceLog>;
   targets: Record<string, TargetLog>;
-  clusters: Array<ClusterLog>;
 };
 
 export class GameStateCollector {
   public state: GameState = {
-    resources: {},
     targets: {},
-    clusters: [],
   };
   public hackEntries: HackEntriesState = {
     min: 0,
     max: 0,
     entries: {},
+    batches: {},
+    targets: {},
   };
 
-  public sortLogs(logs: Array<JsonLog>): [Array<Patch>, Array<JsonLog>] {
-    const resources = Array<ResourceLog>();
-    const targets = new Array<TargetLog>();
-    const clusters = new Array<ClusterLog>();
+  public addLogs(logs: Array<JsonLog>) {
+    let patches: Array<Patch>;
     const restOfLogs = new Array<JsonLog>();
 
-    for (const log of logs) {
-      switch (log.message) {
-        case ResourceLogMessage:
-          resources.push(log.fields as ResourceLog);
-          break;
-
-        case TargetLogMessage:
-          targets.push(log.fields as TargetLog);
-          break;
-
-        case ClusterLogMessage:
-          clusters.push(log.fields as ClusterLog);
-          break;
-
-        default:
-          restOfLogs.push(log);
-          break;
-      }
-    }
-
-    return [this.update(resources, targets), restOfLogs];
-  }
-
-  public updateHackEntries(hackEntries: Array<HackEntryLog>): Array<Patch> {
-    if (hackEntries.length === 0) return;
-    let patches: Array<Patch>;
     this.hackEntries = produce(
       this.hackEntries,
       (draft) => {
-        const newEntriesMap = new Map<number, HackRun>();
-        const max = this.fillNewEntriesMap(hackEntries, newEntriesMap);
-
-        for (const hackRun of newEntriesMap.values()) {
-          draft.entries[hackRun.target] ??= [];
-          draft.entries[hackRun.target].push(hackRun);
-        }
-
-        for (const target in draft.entries) {
-          const cutoffIdx = binarySearch(
-            draft.entries[target],
-            (mid) => mid.start - (max - HackEntriesWindow),
-          );
-          if (cutoffIdx >= 0) {
-            draft.entries[target] = draft.entries[target].slice(cutoffIdx);
+        for (const log of logs) {
+          if (!log.label || !log.fields) continue;
+          if (log.label.startsWith("Action-")) {
+            this.processRunnerLog(draft, log);
+            continue;
           }
+          if (log.label === "GameData") {
+            this.processGameDataLog(draft, log);
+            continue;
+          }
+
+          restOfLogs.push(log);
         }
-        draft.max = max;
       },
       (p) => (patches = p),
     );
@@ -108,53 +86,69 @@ export class GameStateCollector {
     return patches;
   }
 
-  private update(resources: Array<ResourceLog>, targets: Array<TargetLog>): Array<Patch> {
-    let patches: Array<Patch>;
-    this.state = produce(
-      this.state,
-      (draft) => {
-        copyArrayToObject<ResourceLog>(resources, draft.resources, (e) => e.server);
-        copyArrayToObject<TargetLog>(targets, draft.targets, (e) => e.server);
-      },
-      (p) => (patches = p),
-    );
-    return patches;
-  }
+  private processRunnerLog(draft: WritableDraft<HackEntriesState>, log: JsonLog) {
+    let run: HackRun;
+    switch (log.message) {
+      case ActionBatchEndedLabel:
+        delete draft.entries[log.fields.target];
+        delete draft.batches[log.fields.target];
+        break;
 
-  private fillNewEntriesMap(
-    hackEntries: Array<HackEntryLog>,
-    newEntriesMap: Map<number, HackRun>,
-  ): number {
-    let newMax = 0;
+      case ActionWaitForStartLabel:
+        if (!draft.batches[log.fields.target])
+          draft.batches[log.fields.target] = {
+            target: log.fields.target,
+          } as any;
+        draft.batches[log.fields.target].starts = log.fields.starts;
+        draft.batches[log.fields.target].count = log.fields.count;
+        break;
 
-    for (const hackEntry of hackEntries) {
-      let hackRun: HackRun;
-      if (!newEntriesMap.has(hackEntry.port)) {
-        hackRun = {
-          start: Number.MAX_SAFE_INTEGER,
-          end: 0,
-          target: hackEntry.target,
-          servers: [],
-          hackType: hackEntry.hackType,
-          index: 0,
-          count: hackEntry.count,
-        };
-        newEntriesMap.set(hackEntry.port, hackRun);
-      } else {
-        hackRun = newEntriesMap.get(hackEntry.port);
-      }
+      case ActionWaitForEndLabel:
+        if (!draft.batches[log.fields.target])
+          draft.batches[log.fields.target] = {
+            target: log.fields.target,
+          } as any;
+        draft.batches[log.fields.target].ends = log.fields.ends;
+        draft.batches[log.fields.target].count = log.fields.count;
+        break;
 
-      if (hackEntry.start) {
-        hackRun.start = Math.min(hackRun.start, hackEntry.time);
-        hackRun.servers.push(hackEntry.server);
-      } else {
-        hackRun.end = Math.max(hackRun.end, hackEntry.time);
-        if (hackRun.end > newMax) {
-          newMax = hackRun.end;
-        }
-      }
+      case ActionLeaderInitLabel:
+        if (!draft.batches[log.fields.target])
+          draft.batches[log.fields.target] = {
+            target: log.fields.target,
+          } as any;
+        draft.batches[log.fields.target].hackTime = log.fields.hackTime;
+        draft.batches[log.fields.target].endTime = log.fields.endTime;
+        break;
+
+      case ActionRunSkipLabel:
+      case ActionRunWaitLabel:
+      case ActionRunStartLabel:
+      case ActionRunEndLabel:
+        if (!draft.entries[log.fields.target]) draft.entries[log.fields.target] = {};
+        if (!draft.entries[log.fields.target][log.fields.processIndex]?.length)
+          draft.entries[log.fields.target][log.fields.processIndex] = [{} as any];
+        run =
+          draft.entries[log.fields.target][log.fields.processIndex][
+            draft.entries[log.fields.target][log.fields.processIndex].length - 1
+          ];
+        deepCopy(log.fields, run);
+        if (!run.calcStartTime) run.calcStartTime = log.timestamp;
+        draft.entries[log.fields.target][log.fields.processIndex] = draft.entries[
+          log.fields.target
+        ][log.fields.processIndex].filter((run) => Date.now() - run.startTime < HackEntriesWindow);
+        break;
+
+      default:
+        break;
     }
+  }
 
-    return newMax;
+  private processGameDataLog(draft: WritableDraft<HackEntriesState>, log: JsonLog) {
+    if (draft.targets[log.fields.server]) {
+      deepCopy(log.fields, draft.targets[log.fields.server]);
+    } else {
+      draft.targets[log.fields.server] = log.fields as any;
+    }
   }
 }

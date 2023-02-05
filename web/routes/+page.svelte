@@ -1,7 +1,6 @@
-<script>
-  function onBtnClick() {
-    alert("HI");
-  }
+<script lang="ts">
+  import "$lib/stores/statsSocketClient";
+  import TargetList from "$components/target/TargetList.svelte";
 </script>
 
-<button on:click={onBtnClick}>Hi</button>
+<TargetList />

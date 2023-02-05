@@ -18,41 +18,47 @@ import {
   uniquePathsInGridV1,
   uniquePathsInGridV2,
 } from "$src/coding-contracts/solutions/uniquePathsInGrid";
-import { waysToSum } from "$src/coding-contracts/solutions/waysToSum";
+import { waysToSum, waysToSumLimited } from "$src/coding-contracts/solutions/waysToSum";
+import { generateIPAddresses } from "$src/coding-contracts/solutions/generateIPAddresses";
+import { maxSumSubarray } from "$src/coding-contracts/solutions/maxSumSubarray";
+import { shortestPath } from "$src/coding-contracts/solutions/shortestPath";
+import { CeaserCipher, VigenereCipher } from "$src/coding-contracts/solutions/Ciphers";
+import { LempelZivDecompression } from "$src/coding-contracts/solutions/LempelZiv";
+import { sanitizeParentheses } from "$src/coding-contracts/solutions/sanitizeParentheses";
+import { validMathExpressions } from "$src/coding-contracts/solutions/validMathExpressions";
 
 export type SolutionFunction<InputType, OutputType> = (input: InputType) => OutputType;
 
-const NameToSolutionFunction: Record<string, SolutionFunction<any, any>> = {
+export const NameToSolutionFunction: Record<string, SolutionFunction<any, any>> = {
   "Find Largest Prime Factor": largestPrimeFactor,
-  // TODO
-  "Subarray with Maximum Sum": undefined,
+  "Subarray with Maximum Sum": maxSumSubarray,
   "Total Ways to Sum": waysToSum,
-  // TODO
-  "Total Ways to Sum II": undefined,
+  "Total Ways to Sum II": waysToSumLimited,
   "Spiralize Matrix": spiralizeMatrix,
   "Array Jumping Game": arrayJumpingGameV1,
   "Array Jumping Game II": arrayJumpingGameV2,
   "Merge Overlapping Intervals": overlappingIntervals,
-
-  // TODO
-  "Generate IP Addresses": undefined,
-
+  "Generate IP Addresses": generateIPAddresses,
   "Algorithmic Stock Trader I": algorithmicStockTraderV1,
   "Algorithmic Stock Trader II": algorithmicStockTraderV2,
   "Algorithmic Stock Trader III": algorithmicStockTraderV3,
   "Algorithmic Stock Trader VI": algorithmicStockTraderV4,
-
   "Minimum Path Sum in a Triangle": minPathInTriangle,
-
   "Unique Paths in a Grid I": uniquePathsInGridV1,
   "Unique Paths in a Grid II": uniquePathsInGridV2,
-
+  "Shortest Path in a Grid": shortestPath,
+  "Sanitize Parentheses in Expression": sanitizeParentheses,
+  "Find All Valid Math Expressions": validMathExpressions,
   "HammingCodes: Integer to Encoded Binary": encodeHammingCode,
   "HammingCodes: Encoded Binary to Integer": decodeHammingCode,
-
+  // TODO
+  "Proper 2-Coloring of a Graph": undefined,
   "Compression I: RLE Compression": lreCompression,
-
-  // TODO others
+  "Compression II: LZ Decompression": LempelZivDecompression,
+  // TODO
+  "Compression III: LZ Compression": undefined,
+  "Encryption I: Caesar Cipher": CeaserCipher,
+  "Encryption II: Vigenère Cipher": VigenereCipher,
 };
 
 export function runSolution(name: string, input: any): any {

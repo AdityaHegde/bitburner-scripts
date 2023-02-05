@@ -5,7 +5,7 @@ export const PortDataWait = 50;
 
 export const LogAggregationPort = 99;
 
-export const HackResponsePort = 100;
+export const ServerActionResponsePort = 100;
 export const HackPortStart = 101;
 
 export class PortWrapper {

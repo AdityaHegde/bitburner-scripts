@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { asyncWait } from "$server/utils/asyncUtils";
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { asyncWait } from "$server/utils/asyncUtils";
 import { GrowTimeMulti, MetadataFile, WeakenTimeMulti } from "$src/constants";
 import type {
   BasicHGWOptions,
@@ -66,6 +66,8 @@ export class NSMock implements NS {
     private readonly player = new MockedPlayer(),
   ) {}
 
+  // custom methods used in tests
+
   public copy(): NSMock {
     return new NSMock(this.servers, this.ports, this.player);
   }
@@ -73,8 +75,6 @@ export class NSMock implements NS {
   public addServer(server: MockedServer) {
     this.servers[server.hostname] = server;
   }
-
-  // custom methods used to mock data
 
   // inbuilt methods
 
@@ -452,8 +452,9 @@ export class NSMock implements NS {
     return Promise.resolve(undefined);
   }
 
-  sleep(millis: number): Promise<true> {
-    return Promise.resolve(true);
+  async sleep(millis: number): Promise<true> {
+    await asyncWait(millis);
+    return true;
   }
 
   spawn(script: string, numThreads?: number, ...args: (string | number | boolean)[]): void {}
