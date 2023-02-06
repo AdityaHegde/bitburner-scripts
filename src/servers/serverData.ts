@@ -1,6 +1,7 @@
 import { GrowTimeMulti, HackBatchPercents, SharePowerTime, WeakenTimeMulti } from "$src/constants";
 import type { ServerActionsData } from "$src/servers/server-actions/serverActionType";
 import type { NS, Player, Server } from "$src/types/gameTypes";
+import { config } from "$src/config";
 
 export const SharePowerDummyServer = "share_power";
 
@@ -23,8 +24,10 @@ export class ServerData {
   public money = 0;
   public rate: number;
   public growth: number;
-  public times: ServerActionsData = [0, 0, 0, 0];
+  public times: ServerActionsData = [0, 0, 0, 0, 0];
   public growThreads: Array<number>;
+
+  public expScore = 0;
 
   public links = new Map<string, ServerData>();
 
@@ -55,17 +58,30 @@ export class ServerData {
     if (this.name === SharePowerDummyServer) return;
 
     const serverObject = this.ns.getServer(this.name);
+    const playerObject = this.ns.getPlayer();
 
     if (this.maxMoney > 0) {
       this.security = serverObject.hackDifficulty;
       this.money = serverObject.moneyAvailable;
 
-      const hackTime = this.ns.getHackTime(this.name);
-      this.times = [hackTime * WeakenTimeMulti, hackTime * GrowTimeMulti, hackTime, SharePowerTime];
-      this.rate = this.ns.hackAnalyze(this.name);
+      const hackTime = config.hasFormulaAccess
+        ? this.ns.formulas.hacking.hackTime(serverObject, playerObject)
+        : this.ns.getHackTime(this.name);
+      this.times = [
+        hackTime * WeakenTimeMulti,
+        hackTime * GrowTimeMulti,
+        hackTime,
+        SharePowerTime,
+        hackTime * GrowTimeMulti,
+      ];
+      this.rate = config.hasFormulaAccess
+        ? this.ns.formulas.hacking.hackPercent(serverObject, playerObject)
+        : this.ns.hackAnalyze(this.name);
       this.growth = serverObject.serverGrowth;
+
+      this.expScore = serverObject.baseDifficulty / hackTime;
     } else {
-      this.times = [0, 0, 0, SharePowerTime];
+      this.times = [0, 0, SharePowerTime, SharePowerTime, 0];
       this.rate = 0;
       this.growth = 0;
     }

@@ -5,6 +5,7 @@
   import type { HackBatch } from "$server/game/gameState";
   import type { Tweened } from "svelte/motion";
   import { tweened } from "svelte/motion";
+  import { goto } from "$app/navigation";
 
   export let targetName: string;
 
@@ -35,12 +36,13 @@
 
 <div class="flex flex-row w-full">
   <div class="w-1/3">
-    <div class="stats shadow">
+    <div class="stats shadow" on:click={() => goto(`/target/${targetName}`)}>
       <div class="stat">
         <div class="stat-title">{target.server}</div>
         <div class="stat-value">
           {ShorthandNotationSchema.diskSpace.convert(target.mem * 1024 * 1024 * 1024)}
         </div>
+        <div class="stat-desc">{target.sets} Sets. {target.threads.join(",")} Threads</div>
       </div>
     </div>
   </div>

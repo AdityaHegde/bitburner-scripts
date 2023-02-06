@@ -5,6 +5,7 @@ type Jump = {
   index: number;
   jumps: number;
   distance: number;
+  heuristic: number;
 };
 
 // runs a A* algorithm
@@ -12,7 +13,7 @@ function arrayJumpingGameCore(input: Array<number>): number {
   const nextJump = new Heap<Jump>(
     (a, b) => {
       if (a.jumps === b.jumps) {
-        return b.distance - a.distance;
+        return b.heuristic - a.heuristic;
       }
       return a.jumps - b.jumps;
     },
@@ -22,6 +23,7 @@ function arrayJumpingGameCore(input: Array<number>): number {
     index: 0,
     jumps: 0,
     distance: input.length - 1,
+    heuristic: input.length - 1 - input[0],
   });
 
   const visited = new Set<number>();
@@ -44,6 +46,7 @@ function arrayJumpingGameCore(input: Array<number>): number {
           index: i,
           jumps,
           distance,
+          heuristic: distance - input[i],
         });
         continue;
       }

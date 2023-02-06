@@ -1,4 +1,4 @@
-import { ServerActionRunner } from "$src/servers/server-actions/serverActionRunner";
+import { SyncedServerActionRunner } from "$src/servers/server-actions/action-runner/syncedServerActionRunner";
 import { ServerActionPorts } from "$src/servers/server-actions/serverActionPorts";
 import type { NSMock } from "./NSMock";
 import {
@@ -15,7 +15,7 @@ export const BaseHackTime = 1000;
 
 export class TestBatchRunner {
   public hackTime: number;
-  public readonly actions: Array<Array<ServerActionRunner>>;
+  public readonly actions: Array<Array<SyncedServerActionRunner>>;
   public readonly actionCallbacks: Array<Array<Mock>>;
   public readonly serverActionPorts: ServerActionPorts;
 
@@ -47,7 +47,7 @@ export class TestBatchRunner {
           asyncWait(this.hackTime * ServerActionTimeMultipliers[actionTypes[actionIndex]]),
         );
         this.actionCallbacks[setIndex][actionIndex] = mockedAction;
-        this.actions[setIndex][actionIndex] = new ServerActionRunner(
+        this.actions[setIndex][actionIndex] = new SyncedServerActionRunner(
           ns,
           Logger.ConsoleLogger(ns, "Test"),
           actionTypes[actionIndex],

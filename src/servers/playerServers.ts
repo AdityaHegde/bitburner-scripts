@@ -1,4 +1,4 @@
-import { MaxServerSize, PlayerServerPrefix } from "$src/constants";
+import { PlayerServerPrefix } from "$src/constants";
 import type { NS } from "$src/types/gameTypes";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
 import type { Logger } from "$src/utils/logger/logger";
@@ -18,11 +18,11 @@ export class PlayerServers extends OrchestratorModule {
     private readonly ns: NS,
     private readonly logger: Logger,
     private readonly serverDataList: ServerDataList,
-    private readonly playerServerMaxSize: number,
+    private readonly playerServerMaxSize: number = Number.MAX_SAFE_INTEGER,
   ) {
     super();
     this.playerServerMaxCount = ns.getPurchasedServerLimit();
-    this.playerServerMaxSize = Math.min(playerServerMaxSize, MaxServerSize);
+    this.playerServerMaxSize = Math.min(playerServerMaxSize, ns.getPurchasedServerMaxRam());
   }
 
   public async process() {

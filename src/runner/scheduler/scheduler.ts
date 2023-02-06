@@ -14,10 +14,16 @@ import {
 } from "$src/servers/server-actions/serverActionType";
 import type { ScriptSchedule } from "$src/runner/scheduler/scriptSchedule";
 import type { ScriptScheduler } from "$src/runner/scheduler/scriptScheduler";
-import { asyncWait } from "$server/utils/asyncUtils";
+import { asyncWait, waitUntil } from "$server/utils/asyncUtils";
+import { SimpleBatchReserve } from "$src/servers/server-actions/batch-reserve/SimpleBatchReserve";
+import { MultipleBatchReserve } from "$src/servers/server-actions/batch-reserve/MultipleBatchReserve";
+import { config } from "$src/config";
 
 export class Scheduler {
   private changed = false;
+
+  private simpleReserve = new SimpleBatchReserve();
+  private multiReserve = new MultipleBatchReserve();
 
   public constructor(
     private readonly ns: NS,
@@ -34,20 +40,32 @@ export class Scheduler {
     });
     serverDataList.on("newResource", () => (this.changed = true));
     serverDataList.on("resourceUpdated", () => (this.changed = true));
-    portCoordinator.on("batchStarted", (batch, hackTime) => {
-      batch.startedLog(this.logger, hackTime);
+    portCoordinator.on("batchStarted", (batch) => {
+      if (this.targetList.shouldRestart(batch)) {
+        this.stopBatch(batch);
+      }
     });
     portCoordinator.on("batchStopped", (batch) => {
       batch.unClaim(this.serverDataList.resourceList);
       this.targetList.batchStopped(batch);
       this.createBatch(batch.target);
+      this.logger.log("BatchStopped", {
+        target: batch.target.name,
+        mode: ServerActionBatchMode[batch.mode],
+      });
     });
   }
 
   public async process() {
     if (!this.changed) return;
     this.changed = false;
-    this.targetList.log(this.logger, this.serverDataList);
+    this.logger.log("TargetList", {
+      availableMem: Math.floor(this.serverDataList.resourceList.availableMem),
+      hackSize: this.targetList.hackQueue.size(),
+      prepSize: this.targetList.prepQueue.size(),
+      running: this.targetList.running.size(),
+      stopping: this.targetList.stopping.size(),
+    });
     // this is to make sure script is killed after we got a response
     await asyncWait(1);
 
@@ -68,6 +86,19 @@ export class Scheduler {
       this.unwindQueue(this.targetList.backFillQueue);
   }
 
+  public async end() {
+    while (!this.targetList.running.empty()) {
+      this.stopBatch(this.targetList.running.pop());
+    }
+    this.logger.info("StoppingScript", {
+      stopping: this.targetList.stopping.size(),
+      prepSize: this.targetList.prepQueue.size(),
+      hackSize: this.targetList.hackQueue.size(),
+    });
+
+    return waitUntil(() => this.targetList.stopping.empty(), -1);
+  }
+
   public addScriptSchedule(scriptSchedule: ScriptSchedule) {
     this.scriptScheduler.addScriptSchedule(scriptSchedule);
   }
@@ -76,17 +107,6 @@ export class Scheduler {
     const batch = this.batchCreator.createBatch(target);
     this.targetList.addBatch(batch);
     this.changed = true;
-    // this.logger.log("AddingBatch", {
-    //   target: target.name,
-    //   mode: ServerActionBatchMode[batch.mode],
-    //   money: `${ShorthandNotationSchema.usd.convert(
-    //     target.money,
-    //   )}/${ShorthandNotationSchema.usd.convert(target.maxMoney)}`,
-    //   security: `${target.security.toFixed(0)}/${target.minSecurity}`,
-    //   threads: batch.threads,
-    //   count: batch.count,
-    //   memNeeded: batch.memNeeded,
-    // });
     this.portCoordinator.targetLog(batch);
   }
 
@@ -94,9 +114,7 @@ export class Scheduler {
     if (queue.empty()) return;
     while (
       !this.targetList.running.empty() &&
-      ((queue.peek().score > this.targetList.running.peek().score &&
-        queue.peek().memNeeded > this.serverDataList.resourceList.availableMem) ||
-        this.targetList.running.peek().mode === ServerActionBatchMode.BackFill)
+      this.targetList.shouldStop(this.serverDataList, queue)
     ) {
       this.stopBatch(this.targetList.running.peek());
     }
@@ -126,30 +144,24 @@ export class Scheduler {
     while (!queue.empty()) {
       const batch = queue.peek();
 
-      if (
-        batch.mode !== ServerActionBatchMode.BackFill &&
-        !this.targetList.stopping.empty() &&
-        (batch.memNeeded > this.serverDataList.resourceList.availableMem ||
-          this.targetList.stopping.peek().canEndBefore(batch))
-      )
-        break;
+      if (this.targetList.shouldStart(this.serverDataList, batch)) break;
 
       if (!batch.enabled || !this.tryReserve(batch)) break;
 
       this.claimBatch(batch);
       this.targetList.batchRunning(batch);
+      batch.startedLog(this.logger, batch.target.times[ServerActionType.Hack]);
       queue.pop();
     }
   }
 
   private tryReserve(batch: ServerActionBatch) {
-    if (batch.mode === ServerActionBatchMode.Prep)
-      batch.compressForMem(this.serverDataList.resourceList.availableMem);
-    const reserveResult = batch.reserveForSet(
-      this.serverDataList.resourceList,
-      batch.actionSets[0],
-    );
-    // batch.reservedLog(this.logger, this.serverDataList.resourceList);
+    batch.compressForMem(this.serverDataList.resourceList.availableMem);
+    const reserveInstance =
+      batch.mode === ServerActionBatchMode.Hack && config.hasFormulaAccess
+        ? this.multiReserve
+        : this.simpleReserve;
+    const reserveResult = reserveInstance.reserve(batch, this.serverDataList.resourceList);
     if (reserveResult) return true;
 
     batch.unReserve(this.serverDataList.resourceList);
@@ -164,7 +176,6 @@ export class Scheduler {
         server: batch.target.name,
       });
     }
-    // batch.runningLog(this.logger, this.serverDataList.resourceList);
   }
 
   private stopBatch(batch: ServerActionBatch) {

@@ -49,6 +49,7 @@ export class ShorthandNotationSchema {
   }
 
   public convert(num: number): string {
+    if (!num) return "0";
     const positive = num >= 0;
     num = Math.abs(num);
     let i = 0;

@@ -2,16 +2,14 @@ import {
   ServerActionTimeMultipliers,
   ServerActionType,
 } from "$src/servers/server-actions/serverActionType";
-import { ServerActionPorts } from "$src/servers/server-actions/serverActionPorts";
-import { ServerActionResponsePort } from "$src/ports/portWrapper";
-import type { NetscriptPort, NS } from "$src/types/gameTypes";
+import type { NS } from "$src/types/gameTypes";
 import { newExitedPacket } from "$src/ports/packets/exitedPacket";
 import { BatchOperationBuffer } from "$src/constants";
 import { newServerActionCompleted } from "$src/ports/packets/serverActionCompletedPacket";
 import { Logger } from "$src/utils/logger/logger";
-import type { ServerActionReferenceData } from "$src/ports/packets/serverActionReferenceData";
 import { newBatchStartedPacket } from "$src/ports/packets/batchStartedPacket";
 import { asyncWait } from "$server/utils/asyncUtils";
+import { ServerActionRunner } from "$src/servers/server-actions/action-runner/serverActionRunner";
 
 export type ActionLogBase = {
   target: string;
@@ -43,24 +41,27 @@ export type ActionLeaderInitLog = ActionLogBase & {
 export const ActionRunSkipLabel = "RunSkip";
 export type ActionRunSkipLog = ActionLogBase & {
   startTime: number;
+  skipped: boolean;
   startDiff: number;
 };
 
 export const ActionRunWaitLabel = "RunWait";
 export type ActionRunWaitLog = ActionLogBase & {
   startTime: number;
+  waitTime: number;
   startDiff: number;
 };
 
 export const ActionRunStartLabel = "RunStart";
 export type ActionRunStartLog = ActionLogBase & {
-  actualDiff: number;
+  actualStartTime: number;
 };
 
 export const ActionRunEndLabel = "RunEnd";
 export type ActionRunEndLog = ActionLogBase & {
-  actualDiff: number;
-  endDiff: number;
+  actualStartTime: number;
+  actualEndTime: number;
+  endTime: number;
 };
 
 export const ActionBatchEndedLabel = "BatchEnded";
@@ -72,31 +73,9 @@ export type ActionBatchEndedLog = {
  * Runs on the servers and does the actual action
  * TODO: add simpler version for experience and share power actions
  */
-export class ServerActionRunner {
-  private readonly responsePort: NetscriptPort;
-  private readonly serverActionPorts: ServerActionPorts;
-  private readonly isLeader: boolean;
-
+export class SyncedServerActionRunner extends ServerActionRunner {
   // for logging
   private logBase: ActionLogBase;
-
-  constructor(
-    private readonly ns: NS,
-    private readonly logger: Logger,
-    private readonly serverAction: ServerActionType,
-    private readonly action: (server: string, stock: number) => Promise<number>,
-    private readonly reference: ServerActionReferenceData,
-    // unique per batch
-    private readonly commandPort: number,
-    // unique per batch
-    syncPort: number,
-    // unique per batch
-    triggerPort: number,
-  ) {
-    this.responsePort = ns.getPortHandle(ServerActionResponsePort);
-    this.serverActionPorts = new ServerActionPorts(ns, commandPort, syncPort, triggerPort);
-    this.isLeader = reference.processIndex === 0;
-  }
 
   public static fromNS(
     ns: NS,
@@ -104,7 +83,7 @@ export class ServerActionRunner {
     action: (server: string, stock: number) => Promise<number>,
   ) {
     const reference = JSON.parse(ns.args[0] as string);
-    return new ServerActionRunner(
+    return new SyncedServerActionRunner(
       ns,
       Logger.AggregatorLogger(ns, `Action-${ServerActionType[serverAction]}`),
       serverAction,
@@ -150,22 +129,24 @@ export class ServerActionRunner {
 
   private async runAction() {
     for (let c = 0; c < this.reference.countMulti; c++) {
-      const [server, stock, , endTime] = this.serverActionPorts.getTargetInfo();
+      const [server, stock] = this.serverActionPorts.getTargetInfo();
+      const [, , , endTime] = this.serverActionPorts.getActionInfo();
 
       if (!(await this.waitToStart(c))) {
         continue;
       }
-      const actualDiff = endTime - Date.now();
+      const actualStartTime = Date.now();
       this.logger.log<ActionRunStartLog>(ActionRunStartLabel, {
         ...this.logBase,
-        actualDiff,
+        actualStartTime,
       });
       await this.action(server, stock);
       await asyncWait(1);
       this.logger.log<ActionRunEndLog>(ActionRunEndLabel, {
         ...this.logBase,
-        actualDiff,
-        endDiff: endTime - Date.now(),
+        actualStartTime,
+        actualEndTime: Date.now(),
+        endTime,
       });
       // used to update hackTime if security decreases or hackTime changes
       await this.responsePort.write(JSON.stringify(newServerActionCompleted(this.commandPort)));
@@ -186,6 +167,7 @@ export class ServerActionRunner {
       this.logger.log<ActionRunSkipLog>(ActionRunSkipLabel, {
         ...this.logBase,
         startTime,
+        skipped: true,
         startDiff,
       });
       return false;
@@ -195,6 +177,7 @@ export class ServerActionRunner {
       ...this.logBase,
       startTime,
       startDiff,
+      waitTime: Date.now(),
     });
     if (startDiff > BatchOperationBuffer / 4) {
       await this.ns.sleep(startDiff);

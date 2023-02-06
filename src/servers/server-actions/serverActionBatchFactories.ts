@@ -9,6 +9,7 @@ import {
   HackGroupSize,
   HackGrowthPercent,
   HackPercent,
+  Second,
   ServerWeakenAmount,
   WeakenThreadsPerGrowCall,
   WeakenThreadsPerHackCall,
@@ -17,6 +18,7 @@ import {
   ServerActionType,
   ServerActionTypeToMemMap,
 } from "$src/servers/server-actions/serverActionType";
+import { config } from "$src/config";
 
 export function getWeaken(ns: NS, target: ServerData): ServerActionBatch {
   const calls = Math.ceil((target.security - target.minSecurity) / ServerWeakenAmount);
@@ -30,7 +32,9 @@ export function getWeaken(ns: NS, target: ServerData): ServerActionBatch {
 }
 
 export function getGrowWeaken(ns: NS, target: ServerData): ServerActionBatch {
-  const grows = Math.ceil(ns.growthAnalyze(target.name, target.maxMoney / target.money));
+  const grows = Math.ceil(
+    ns.growthAnalyze(target.name, target.maxMoney / Math.max(target.money, 1)),
+  );
   const weakens = Math.ceil(grows / WeakenThreadsPerGrowCall);
   return new ServerActionBatch(
     ServerActionBatchMode.Prep,
@@ -60,8 +64,7 @@ export function getEarlyHackWeakenGrowWeaken(ns: NS, target: ServerData): Server
       ServerActionType.Weaken,
     ],
     [hacksPerRun, hacksWeakens, grows, growsWeakens],
-    // add some arbitrary count to recover if there is conflict
-    10,
+    -1,
     [HackGroupSize, 1, 1, 1],
   );
 }
@@ -70,11 +73,12 @@ export function getExperienceBatch(target: ServerData): ServerActionBatch {
   const batch = new ServerActionBatch(
     ServerActionBatchMode.BackFill,
     target,
-    [ServerActionType.Grow],
+    [ServerActionType.Experience],
     [-1],
     -1,
   );
   batch.score = 1;
+  batch.enabled = config.backFillExp;
   return batch;
 }
 
@@ -87,7 +91,7 @@ export function getSharePowerBatch(target: ServerData, enabled: boolean): Server
     -1,
   );
   batch.score = 2;
-  batch.enabled = enabled;
+  batch.enabled = !config.hasFormulaAccess && enabled;
   return batch;
 }
 
@@ -120,10 +124,17 @@ export function getHackWeakenGrowWeaken(
     -1,
   );
   const chance = ns.formulas.hacking.hackChance(server, player);
-  batch.score =
-    (chance * target.maxMoney * percent * 100) /
-    (target.times[ServerActionType.Weaken] * batch.memNeeded);
   batch.percent = percent;
+  batch.enabled = !config.prepOnly;
+  if (target.times[ServerActionType.Hack] < Second) {
+    // sub second hacks add too much to processing
+    batch.score = 0;
+    batch.enabled = false;
+  } else {
+    batch.score =
+      (chance * target.maxMoney * percent * 100) /
+      (target.times[ServerActionType.Weaken] * batch.memNeeded);
+  }
 
   return batch;
 }

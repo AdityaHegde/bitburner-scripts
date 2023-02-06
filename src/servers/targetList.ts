@@ -82,6 +82,34 @@ export class TargetList {
     this.stopping.delete(batch);
   }
 
+  public shouldStop(serverDataList: ServerDataList, queue: Heap<ServerActionBatch>) {
+    return (
+      (queue.peek().score > this.running.peek().score &&
+        queue.peek().memNeeded > serverDataList.resourceList.availableMem) ||
+      this.running.peek().mode === ServerActionBatchMode.BackFill
+    );
+  }
+
+  public shouldStart(serverDataList: ServerDataList, batch: ServerActionBatch) {
+    return (
+      batch.mode !== ServerActionBatchMode.BackFill &&
+      !this.stopping.empty() &&
+      (batch.memNeeded > serverDataList.resourceList.availableMem ||
+        this.stopping.peek().canEndBefore(batch))
+    );
+  }
+
+  public shouldRestart(batch: ServerActionBatch): boolean {
+    if (batch.mode !== ServerActionBatchMode.Hack) return false;
+    if (
+      batch.target.money === batch.target.maxMoney &&
+      batch.target.security === batch.target.minSecurity
+    )
+      return false;
+    batch.mismatched--;
+    return batch.mismatched <= 0;
+  }
+
   public log(logger: Logger, serverDataList: ServerDataList) {
     logger.log("TargetsQueue", {
       availableMem: serverDataList.resourceList.availableMem,

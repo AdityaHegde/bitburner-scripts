@@ -21,11 +21,10 @@ export class CodingContractScanner extends OrchestratorModule {
   }
 
   public async process(): Promise<void> {
+    this.activeContracts.clear();
     const now = Date.now();
     // run every 5 minutes
     if (now - this.lastRun < 5 * Minute) return;
-
-    this.activeContracts.clear();
 
     for (const server of this.allServers) {
       this.checkServer(server);

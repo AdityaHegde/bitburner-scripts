@@ -1,7 +1,7 @@
 import type { JsonLog } from "$src/utils/logger/logFormatter";
 import type { Patch } from "immer";
 import { enablePatches, produce } from "immer";
-import type { ActionLogBase } from "$src/servers/server-actions/serverActionRunner";
+import type { ActionLogBase } from "$src/servers/server-actions/action-runner/syncedServerActionRunner";
 import {
   ActionBatchEndedLabel,
   ActionLeaderInitLabel,
@@ -11,7 +11,7 @@ import {
   ActionRunWaitLabel,
   ActionWaitForEndLabel,
   ActionWaitForStartLabel,
-} from "$src/servers/server-actions/serverActionRunner";
+} from "$src/servers/server-actions/action-runner/syncedServerActionRunner";
 import { deepCopy } from "$server/utils/deepCopy";
 import type { WritableDraft } from "immer/dist/types/types-external";
 import { HackEntriesWindow } from "$lib/stores/hackEntries";
@@ -31,8 +31,9 @@ export type HackRun = ActionLogBase & {
   startTime: number;
   calcStartTime: number;
   startDiff: number;
-  actualDiff: number;
-  endDiff: number;
+  actualStartTime: number;
+  actualEndTime: number;
+  endTime: number;
 };
 export type HackBatch = {
   target: string;

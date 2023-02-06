@@ -31,6 +31,8 @@ export type TargetLog = {
   hackTime: number;
   threads: Array<number>;
   mem: number;
+  sets: number;
+  percent: number;
 };
 
 export class PortCoordinator extends EventEmitter<PortCoordinatorEvents> {
@@ -76,6 +78,8 @@ export class PortCoordinator extends EventEmitter<PortCoordinatorEvents> {
       hackTime: batch.target.times[ServerActionType.Hack],
       threads: batch.threads,
       mem: batch.memTaken,
+      sets: batch.actionSets.length,
+      percent: batch.percent,
     });
   }
 
@@ -117,10 +121,12 @@ export class PortCoordinator extends EventEmitter<PortCoordinatorEvents> {
   private handleBatchStartedPacket(batchStartedPacket: BatchStartedPacket) {
     const batch = this.portToBatchMap.get(batchStartedPacket.port);
     if (!batch) return; // TODO: error
-    this.emit("batchStarted", batch, batchStartedPacket.hackTime);
+
+    batch.target.updateEphemeral();
     batch.updateHackTime(true);
     batch.end = batchStartedPacket.endTime;
     this.targetLog(batch);
+    this.emit("batchStarted", batch, batchStartedPacket.hackTime);
   }
 
   private handleExitedPacket(exitedPacket: ExitedPacket) {

@@ -61,8 +61,20 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       this.lastLevel = player.skills.hacking;
     }
 
-    for (const serverData of this.nukeServers()) {
+    const crackedServers = this.nukeServers();
+    for (const serverData of crackedServers) {
       this.handleNewCrackedServer(player, serverData);
+    }
+    if (crackedServers.length > 0) {
+      this.logger.log("ServersInfo", {
+        pendingCrack: this.allServers.slice(this.serverIndex).join(","),
+        pendingHack: this.possibleTargets
+          .map(
+            (target) =>
+              `${target.name}(${target.reqLevel * HackLevelMulti - player.skills.hacking})`,
+          )
+          .join(","),
+      });
     }
     this.updateTargets(player);
   }
@@ -112,7 +124,7 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       const targetServer = this.possibleTargets[i];
       if (Math.ceil(player.skills.hacking / HackLevelMulti) >= targetServer.reqLevel) {
         targetServer.updateEphemeral();
-        if (targetServer.rate === 0) {
+        if (targetServer.rate === 0 || targetServer.maxMoney === 0) {
           // un-hackable servers should be ignored
           continue;
         }
@@ -124,6 +136,12 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
 
     if (i > 0) {
       this.possibleTargets = this.possibleTargets.splice(i);
+      this.logger.log("ServersInfo", {
+        pendingCrack: this.allServers.slice(i).join(","),
+        pendingHack: this.possibleTargets
+          .map((target) => `${target.name}(${target.reqLevel})`)
+          .join(","),
+      });
     }
   }
 
@@ -137,7 +155,7 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       return;
     }
     if (Math.ceil(player.skills.hacking / HackLevelMulti) >= serverData.reqLevel) {
-      if (serverData.rate > 0) this.emit("newTarget", serverData);
+      if (serverData.rate > 0 && serverData.maxMoney > 0) this.emit("newTarget", serverData);
     } else {
       this.addToNewTargets(serverData);
     }

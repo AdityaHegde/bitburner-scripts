@@ -42,7 +42,7 @@ export const NameToSolutionFunction: Record<string, SolutionFunction<any, any>> 
   "Algorithmic Stock Trader I": algorithmicStockTraderV1,
   "Algorithmic Stock Trader II": algorithmicStockTraderV2,
   "Algorithmic Stock Trader III": algorithmicStockTraderV3,
-  "Algorithmic Stock Trader VI": algorithmicStockTraderV4,
+  "Algorithmic Stock Trader IV": algorithmicStockTraderV4,
   "Minimum Path Sum in a Triangle": minPathInTriangle,
   "Unique Paths in a Grid I": uniquePathsInGridV1,
   "Unique Paths in a Grid II": uniquePathsInGridV2,

@@ -33,10 +33,11 @@ export class ServerActionBatch {
   public end: number;
   public percent = HackPercent;
   public enabled = true;
+  public mismatched = 3;
 
   public serverActionPorts: ServerActionPorts;
   public readonly largestAction: number;
-  private readonly longestAction: number;
+  public readonly longestAction: number;
   private stopped = 0;
 
   public constructor(
@@ -84,6 +85,8 @@ export class ServerActionBatch {
   }
 
   public compressForMem(mem: number) {
+    if (this.mode !== ServerActionBatchMode.Prep) return;
+
     let ratio = 1;
 
     if (mem < this.memNeeded) {
@@ -227,8 +230,10 @@ export class ServerActionBatch {
       )}/${ShorthandNotationSchema.usd.convert(this.target.maxMoney)}`,
       security: `${this.target.security.toFixed(0)}/${this.target.minSecurity}`,
       threads: this.threads,
+      sets: this.actionSets.length,
       count: this.count,
       ratio: this.ratio,
+      percent: this.percent,
       hackTime: ShorthandNotationSchema.time.convert(hackTime),
       endDiff: ShorthandNotationSchema.time.convert(this.end - Date.now()),
     });

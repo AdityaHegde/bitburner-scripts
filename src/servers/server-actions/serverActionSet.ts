@@ -17,10 +17,7 @@ export class ServerActionSet {
   public assignments: Array<ServerActionAssignments>;
   public readonly threads: Array<number>;
 
-  public constructor(
-    private readonly actionTypes: Array<ServerActionType>,
-    threads: Array<number>,
-  ) {
+  public constructor(public readonly actionTypes: Array<ServerActionType>, threads: Array<number>) {
     this.reservations = new Array(threads.length);
     this.assignments = new Array(threads.length);
     this.threads = new Array(threads.length);

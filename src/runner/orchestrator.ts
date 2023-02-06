@@ -3,6 +3,9 @@ import type { PortCoordinator } from "$src/runner/portCoordinator";
 import type { Scheduler } from "$src/runner/scheduler/scheduler";
 import type { OrchestratorModule } from "$src/runner/orchestratorModule";
 import type { NS } from "$src/types/gameTypes";
+import { initConfig } from "$src/config";
+import type { RunnerEnder } from "$src/runner/ender/perpetualRunner";
+import { PerpetualRunner } from "$src/runner/ender/perpetualRunner";
 
 export class Orchestrator {
   public constructor(
@@ -11,10 +14,12 @@ export class Orchestrator {
     private readonly portCoordinator: PortCoordinator,
     private readonly scheduler: Scheduler,
     private readonly modules: Array<OrchestratorModule>,
+    private readonly ender: RunnerEnder = new PerpetualRunner(),
   ) {
     for (const module of modules) {
       module.on("schedule", (scriptSchedule) => this.scheduler.addScriptSchedule(scriptSchedule));
     }
+    initConfig(ns);
   }
 
   public init() {
@@ -22,8 +27,7 @@ export class Orchestrator {
   }
 
   public async start() {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    while (!this.ender.shouldEnd()) {
       this.serverDataList.process();
       for (const module of this.modules) {
         await module.process();
@@ -34,5 +38,7 @@ export class Orchestrator {
       await this.portCoordinator.responsePort.nextWrite();
       this.portCoordinator.process();
     }
+
+    return this.scheduler.end();
   }
 }
