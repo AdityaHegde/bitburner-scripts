@@ -1,11 +1,12 @@
-import { EarlyGameRunner } from "$src/constants";
+import { GameStage, GameStageToRunner, getGameStage } from "$src/gameStage/gameStage";
 import type { Metadata } from "$src/metadata/metadata";
 import { newMetadata, saveMetadata } from "$src/metadata/metadata";
 import { Cracks } from "$src/servers/cracks";
-import { startEarlyGameRunner } from "$src/servers/startEarlyGameRunner";
+import { startRemoteScript } from "$src/servers/startRemoteScript";
 import type { NS } from "$src/types/gameTypes";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
-import { Logger } from "$src/utils/logger";
+import { Logger } from "$src/utils/logger/logger";
+import { isPlayerServer } from "$src/utils/isPlayerServer";
 
 /**
  * Does a breadth first search for accessible hosts within the city.
@@ -13,22 +14,28 @@ import { Logger } from "$src/utils/logger";
  */
 export async function main(ns: NS) {
   const logger = Logger.ConsoleLogger(ns, "InitServers");
-  const metadata: Metadata = newMetadata(ns);
+  const metadata: Metadata = newMetadata();
 
   const foundServers = new Set();
+  foundServers.add("darkweb");
   metadata.newServers.forEach((server) => foundServers.add(server));
   metadata.runnerServer = "";
 
   let newFoundServersCount: number;
   let newFoundServers = ns.scan();
 
-  const earlyGameScriptMem = ns.getScriptRam(EarlyGameRunner);
-  const earlyGameScriptMaxMem = Math.pow(2, Math.ceil(Math.log2(earlyGameScriptMem)));
-  const cracks = new Cracks(ns);
+  const gameStage = getGameStage(ns);
+  const runnerScript = GameStageToRunner[gameStage];
+  const runnerScriptMem = ns.getScriptRam(runnerScript);
   logger.log("Initialising", {
-    earlyGame: earlyGameScriptMem,
-    maxEarlyGame: earlyGameScriptMaxMem,
+    gameStage: GameStage[gameStage],
+    runnerScript,
+    runnerScriptMem,
   });
+
+  const cracks = new Cracks(ns);
+  cracks.collectCracks();
+  const npcServers = new Array<string>();
 
   do {
     newFoundServersCount = 0;
@@ -36,20 +43,29 @@ export async function main(ns: NS) {
     newFoundServers = [];
 
     for (const newFoundServer of newFoundServersTemp) {
-      if (foundServers.has(newFoundServer) || newFoundServer === "darkweb") continue;
+      if (foundServers.has(newFoundServer)) continue;
       foundServers.add(newFoundServer);
       const serverMem = ns.getServerMaxRam(newFoundServer);
 
       newFoundServersCount++;
       newFoundServers.push(...ns.scan(newFoundServer));
       copyScriptToServer(ns, newFoundServer);
-      metadata.newServers.push(newFoundServer);
+
+      // skip player servers
+      if (isPlayerServer(newFoundServer)) {
+        metadata.newServers.push(newFoundServer);
+        continue;
+      }
+
+      npcServers.push(newFoundServer);
       if (
-        !metadata.runnerServer &&
-        serverMem > earlyGameScriptMem &&
-        serverMem <= earlyGameScriptMaxMem &&
-        cracks.crackNPCServer(newFoundServer)
-      ) {
+        !cracks.crackNPCServer({
+          name: newFoundServer,
+          requiredPorts: ns.getServerNumPortsRequired(newFoundServer),
+        } as any)
+      )
+        continue;
+      if (!metadata.runnerServer && serverMem > runnerScriptMem) {
         // if this server can act as orchestrator crack it and assign it
         metadata.runnerServer = newFoundServer;
         logger.log("BatchOrchestrator", {
@@ -61,11 +77,17 @@ export async function main(ns: NS) {
     await ns.sleep(100);
   } while (newFoundServersCount > 0);
 
-  metadata.newServers.sort(
-    (a, b) => ns.getServerRequiredHackingLevel(a) - ns.getServerRequiredHackingLevel(b),
-  );
+  npcServers.sort((a, b) => {
+    const portsA = ns.getServerNumPortsRequired(a);
+    const portsB = ns.getServerNumPortsRequired(b);
+    if (portsA === portsB) {
+      return ns.getServerRequiredHackingLevel(a) - ns.getServerRequiredHackingLevel(b);
+    }
+    return portsA - portsB;
+  });
+  metadata.newServers.push(...npcServers);
 
-  await startEarlyGameRunner(ns, metadata);
+  await startRemoteScript(ns, metadata, runnerScript);
 
   saveMetadata(ns, metadata);
 }

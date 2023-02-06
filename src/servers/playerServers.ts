@@ -1,15 +1,15 @@
-import { MaxServerSize, PlayerServerPrefix } from "$src/constants";
-import type { Servers } from "$src/servers/servers";
+import { PlayerServerPrefix } from "$src/constants";
 import type { NS } from "$src/types/gameTypes";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
-import type { Logger } from "$src/utils/logger";
+import type { Logger } from "$src/utils/logger/logger";
+import type { ServerDataList } from "$src/servers/serverDataList";
+import { OrchestratorModule } from "$src/runner/orchestratorModule";
 
-export class PlayerServers {
+export class PlayerServers extends OrchestratorModule {
   private playerServerCount = 0;
   private readonly playerServerMaxCount: number;
   private playerServerCursor = 0;
   private playerServerSize = 8;
-  private playerServerMaxSize = MaxServerSize;
 
   private initialised = false;
   private lastRun = 0;
@@ -17,15 +17,18 @@ export class PlayerServers {
   public constructor(
     private readonly ns: NS,
     private readonly logger: Logger,
-    private readonly servers: Servers,
+    private readonly serverDataList: ServerDataList,
+    private readonly playerServerMaxSize: number = Number.MAX_SAFE_INTEGER,
   ) {
+    super();
     this.playerServerMaxCount = ns.getPurchasedServerLimit();
+    this.playerServerMaxSize = Math.min(playerServerMaxSize, ns.getPurchasedServerMaxRam());
   }
 
-  public run() {
+  public async process() {
     const now = Date.now();
     // only run this every ~5sec
-    if (now - this.lastRun < 5000) return [];
+    if (now - this.lastRun < 5000) return;
 
     if (!this.initialised) this.init();
 
@@ -45,23 +48,19 @@ export class PlayerServers {
   private init() {
     this.initialised = true;
 
-    // only buy upto 8 orders of size of home.
-    this.playerServerMaxSize = Math.min(this.playerServerMaxSize, this.playerServerSize << 8);
-
-    for (const resource of this.servers.resources) {
-      if (!resource.server.startsWith(PlayerServerPrefix)) continue;
-      const num = Number(resource.server.replace(PlayerServerPrefix, "")) + 1;
+    for (const serverData of this.serverDataList.resourceList.resources) {
+      if (!serverData.name.startsWith(PlayerServerPrefix)) continue;
+      const num = Number(serverData.name.replace(PlayerServerPrefix, "")) + 1;
       if (num > this.playerServerCount) {
         this.playerServerCount = num;
       }
-      if (resource.maxMem > this.playerServerSize) {
-        this.playerServerSize = resource.maxMem;
+      if (serverData.maxMem > this.playerServerSize) {
+        this.playerServerSize = serverData.maxMem;
       }
     }
     this.logger.log("PlayerServers", {
       playerServerCount: this.playerServerCount,
       playerServerSize: this.playerServerSize,
-      playerServerMaxSize: this.playerServerMaxSize,
     });
   }
 
@@ -76,9 +75,10 @@ export class PlayerServers {
       PlayerServerPrefix + this.playerServerCount,
       this.playerServerSize,
     );
+    if (!newServerName) return false;
     this.playerServerCount++;
     copyScriptToServer(this.ns, newServerName);
-    this.servers.newCrackedServers([newServerName]);
+    this.serverDataList.addServer(newServerName);
 
     this.logger.log("Purchased", {
       server: newServerName,
@@ -97,7 +97,7 @@ export class PlayerServers {
     const money = this.ns.getServerMoneyAvailable("home");
     const serverName = PlayerServerPrefix + this.playerServerCursor;
 
-    if (this.servers.resourcesMap[serverName].maxMem === this.playerServerSize) {
+    if (this.serverDataList.serverDataNameMap[serverName].maxMem === this.playerServerSize) {
       // starting the script from middle.
       // TODO: do this in init
       this.playerServerCursor++;
@@ -111,7 +111,7 @@ export class PlayerServers {
     // try upgrade
     if (!this.ns.upgradePurchasedServer(serverName, this.playerServerSize)) return false;
     this.playerServerCursor++;
-    this.servers.updateResources([serverName]);
+    this.serverDataList.updateServer(serverName);
 
     this.logger.log("Upgraded", {
       server: serverName,

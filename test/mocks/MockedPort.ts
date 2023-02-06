@@ -1,8 +1,8 @@
-import { waitUntil } from "$server/utils/asyncUtils";
 import type { NetscriptPort, PortData } from "$src/types/gameTypes";
 
 export class MockedPort implements NetscriptPort {
   private data = new Array<string | number>();
+  private resolvers = new Array<() => void>();
 
   clear(): void {
     this.data = [];
@@ -16,8 +16,8 @@ export class MockedPort implements NetscriptPort {
     return false;
   }
 
-  async nextWrite(): Promise<void> {
-    await waitUntil(() => this.data.length > 0);
+  nextWrite(): Promise<void> {
+    return new Promise((res) => this.resolvers.push(res));
   }
 
   peek(): PortData {
@@ -33,6 +33,10 @@ export class MockedPort implements NetscriptPort {
   }
 
   write(value: string | number): PortData | null {
-    return this.data.push(value);
+    this.data.push(value);
+    while (this.resolvers.length > 0) {
+      this.resolvers.pop()();
+    }
+    return null;
   }
 }

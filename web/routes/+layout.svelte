@@ -1,5 +1,4 @@
 <script lang="ts">
-  import "$lib/stores/statsSocketClient";
   import "../app.css";
 </script>
 

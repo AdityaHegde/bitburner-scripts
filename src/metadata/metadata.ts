@@ -6,10 +6,9 @@ export type Metadata = {
   runnerServer?: string;
 };
 
-export function newMetadata(ns: NS): Metadata {
-  const playerServers = ns.getPurchasedServers();
+export function newMetadata(): Metadata {
   return {
-    newServers: ["home", ...playerServers],
+    newServers: ["home"],
   };
 }
 

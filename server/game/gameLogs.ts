@@ -1,5 +1,5 @@
 import { gameClient } from "$server/jsonrpc/game-client";
-import type { JsonLog } from "$src/utils/logger";
+import type { JsonLog } from "$src/utils/logger/logFormatter";
 
 export class GameLogs {
   public async read(server: string, filename: string): Promise<Array<JsonLog>> {

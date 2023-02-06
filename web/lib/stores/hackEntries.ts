@@ -3,11 +3,14 @@ import type { Patch } from "immer";
 import { applyPatches } from "immer";
 import type { Readable } from "svelte/store";
 import { writable } from "svelte/store";
+import { Minute } from "$src/constants";
 
 export const { update, set, subscribe } = writable<HackEntriesState>({
   min: 0,
   max: 0,
   entries: {},
+  batches: {},
+  targets: {},
 });
 
 const hackEntriesReducers = {
@@ -26,5 +29,5 @@ export const hackEntriesStore: Readable<HackEntriesState> & typeof hackEntriesRe
 };
 
 // 10 min window
-export const HackEntriesWindow = 1000 * 60 * 10;
+export const HackEntriesWindow = Minute * 10;
 export const HackEntriesScale = 500;
