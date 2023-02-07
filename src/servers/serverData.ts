@@ -2,8 +2,15 @@ import { GrowTimeMulti, HackBatchPercents, SharePowerTime, WeakenTimeMulti } fro
 import type { ServerActionsData } from "$src/servers/server-actions/serverActionType";
 import type { NS, Player, Server } from "$src/types/gameTypes";
 import { config } from "$src/config";
+import { Heap } from "$src/utils/heap";
 
 export const SharePowerDummyServer = "share_power";
+
+type ServerSearchNode = {
+  server: ServerData;
+  distance: number;
+  from: ServerSearchNode;
+};
 
 export class ServerData {
   public readonly reqLevel: number;
@@ -100,6 +107,55 @@ export class ServerData {
       );
       lastThreads = this.growThreads[i];
     }
+  }
+
+  public getPathTo(to: string): Array<ServerData> {
+    const visited = new Set<string>();
+    const queue = new Heap<ServerSearchNode>(
+      (a, b) => a.distance - b.distance,
+      (a) => a.server.name,
+    );
+    queue.push({
+      server: this,
+      distance: 0,
+      from: undefined,
+    });
+
+    while (!queue.empty()) {
+      let visitServer = queue.pop();
+      if (visitServer.server.name === to) {
+        const path = new Array<ServerData>();
+        while (visitServer) {
+          path.unshift(visitServer.server);
+          visitServer = visitServer.from;
+        }
+        return path;
+      }
+
+      visited.add(visitServer.server.name);
+      for (const link of visitServer.server.links.values()) {
+        const distance = visitServer.distance + 1;
+
+        if (visited.has(link.name)) {
+          if (!queue.has(link.name)) continue;
+          const existing = queue.get(link.name);
+          if (existing.distance < distance) {
+            existing.distance = distance;
+            existing.from = visitServer;
+            queue.updateItem(existing);
+          }
+          continue;
+        }
+
+        queue.push({
+          server: link,
+          distance,
+          from: visitServer,
+        });
+      }
+    }
+
+    return [];
   }
 }
 

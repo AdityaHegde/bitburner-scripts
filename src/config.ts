@@ -9,5 +9,4 @@ export const config = {
 
 export function initConfig(ns: NS) {
   config.hasFormulaAccess = ns.fileExists("Formulas.exe", "home");
-  config.backFillPower = ns.getPlayer().factions.length > 0;
 }

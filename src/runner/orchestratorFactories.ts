@@ -15,6 +15,7 @@ import { PrepOnlyRunner } from "$src/runner/ender/prepOnlyRunner";
 import { MaxPlayerServerRunner } from "$src/runner/ender/maxPlayerServerRunner";
 import { CodingContractSolver } from "$src/coding-contracts/codingContractSolver";
 import { CodingContractsProcessor } from "$src/coding-contracts/codingContractsProcessor";
+import { PerpetualRunner } from "$src/runner/ender/perpetualRunner";
 
 export function getEarlyGameOrchestrator(ns: NS, scriptMem: number): Orchestrator {
   const logger = Logger.ConsoleLogger(ns, "EarlyGame");
@@ -27,12 +28,13 @@ export function getEarlyGameOrchestrator(ns: NS, scriptMem: number): Orchestrato
 }
 
 export function getPrepOnlyOrchestrator(ns: NS, scriptMem: number): Orchestrator {
-  const logger = Logger.ConsoleLogger(ns, "PrepOnly");
+  const logger = Logger.ConsoleLogger(ns, "MidGame");
   const { serverDataList, targetList, portCoordinator, scheduler } = getServerDataList(
     ns,
     logger,
     scriptMem,
     "home",
+    ns.getPurchasedServers(),
   );
 
   return new Orchestrator(
@@ -41,17 +43,18 @@ export function getPrepOnlyOrchestrator(ns: NS, scriptMem: number): Orchestrator
     portCoordinator,
     scheduler,
     [],
-    new PrepOnlyRunner(targetList),
+    new PrepOnlyRunner(ns, serverDataList, targetList),
   );
 }
 
 export function getMaxPlayerServerOrchestrator(ns: NS, scriptMem: number): Orchestrator {
-  const logger = Logger.ConsoleLogger(ns, "MaxPlayerServer");
+  const logger = Logger.ConsoleLogger(ns, "MidGame");
   const { serverDataList, portCoordinator, scheduler } = getServerDataList(
     ns,
     logger,
     scriptMem,
     "home",
+    ns.getPurchasedServers(),
   );
 
   return new Orchestrator(
@@ -71,11 +74,39 @@ export function getMaxPlayerServerOrchestrator(ns: NS, scriptMem: number): Orche
   );
 }
 
+export function getGenericMidGameOrchestrator(ns: NS, scriptMem: number): Orchestrator {
+  const logger = Logger.ConsoleLogger(ns, "MidGame");
+  const { serverDataList, portCoordinator, scheduler } = getServerDataList(
+    ns,
+    logger,
+    scriptMem,
+    "home",
+    ns.getPurchasedServers(),
+  );
+
+  return new Orchestrator(
+    ns,
+    serverDataList,
+    portCoordinator,
+    scheduler,
+    [
+      new PlayerServers(ns, logger, serverDataList),
+      new CodingContractsProcessor(
+        ns,
+        new CodingContractScanner(ns, logger, serverDataList.allServers),
+        new CodingContractSolver(ns, logger),
+      ),
+    ],
+    new PerpetualRunner(),
+  );
+}
+
 function getServerDataList(
   ns: NS,
   logger: Logger,
   scriptMem: number,
   runner?: string,
+  extraServers: Array<string> = [],
 ): {
   serverDataList: ServerDataList;
   targetList: TargetList;
@@ -84,7 +115,10 @@ function getServerDataList(
 } {
   const metadata = getMetadata(ns);
   const cracks = new Cracks(ns);
-  const serverDataList = new ServerDataList(ns, logger, cracks, metadata.newServers);
+  const serverDataList = new ServerDataList(ns, logger, cracks, [
+    ...metadata.newServers,
+    ...extraServers,
+  ]);
 
   runner ??= metadata.runnerServer;
 
@@ -100,7 +134,7 @@ function getServerDataList(
     serverDataList,
     targetList,
     portCoordinator,
-    new BatchCreator(ns),
+    new BatchCreator(ns, serverDataList),
     new ScriptScheduler(ns, logger, serverDataList, portCoordinator),
   );
 

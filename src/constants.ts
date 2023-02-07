@@ -4,7 +4,7 @@ export const MetadataFile = "metadata.txt";
 
 export const WriteRemoteMetadataScript = "writeRemoteMetadata.js";
 
-export const BatchOperationBuffer = 200;
+export const BatchOperationBuffer = 500;
 
 export const GrowTimeMulti = 3.2;
 export const WeakenTimeMulti = 4;

@@ -26,7 +26,7 @@
   {#each entries as hackRuns}
     <div class="w-full h-8 relative">
       {#each hackRuns as hackRun}
-        <TargetActionBar {target} {hackRun} />
+        <TargetActionBar {hackRun} />
       {/each}
     </div>
   {/each}

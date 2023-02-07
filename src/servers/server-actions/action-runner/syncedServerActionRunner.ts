@@ -153,12 +153,12 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     }
   }
 
-  private async waitToStart(c: number): Promise<boolean> {
+  private async waitToStart(c: number, startTime?: number): Promise<boolean> {
     const [, , hackTime, notPrepped] = this.serverActionPorts.getTargetInfo();
     const [, ends, , endTime] = this.serverActionPorts.getActionInfo();
     const skipHack = this.serverAction === ServerActionType.Hack && notPrepped === 1 && c === 0;
 
-    const startTime = this.getStartTime(hackTime, c, endTime);
+    startTime ??= this.getStartTime(hackTime, c, endTime);
 
     const startDiff = startTime - Date.now();
     // if some action ended before this could start, it was skipped. skip this as well
@@ -182,7 +182,7 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     if (startDiff > BatchOperationBuffer / 4) {
       await this.ns.sleep(startDiff);
       // check again to make sure timing is correct after waiting
-      return this.waitToStart(c);
+      return this.waitToStart(c, startTime);
     }
     return true;
   }

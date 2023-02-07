@@ -69,7 +69,7 @@ export function getEarlyHackWeakenGrowWeaken(ns: NS, target: ServerData): Server
   );
 }
 
-export function getExperienceBatch(target: ServerData): ServerActionBatch {
+export function getExperienceBatch(target: ServerData, enable: boolean): ServerActionBatch {
   const batch = new ServerActionBatch(
     ServerActionBatchMode.BackFill,
     target,
@@ -78,11 +78,11 @@ export function getExperienceBatch(target: ServerData): ServerActionBatch {
     -1,
   );
   batch.score = 1;
-  batch.enabled = config.backFillExp;
+  batch.enabled = config.backFillExp && enable;
   return batch;
 }
 
-export function getSharePowerBatch(target: ServerData, enabled: boolean): ServerActionBatch {
+export function getSharePowerBatch(target: ServerData): ServerActionBatch {
   const batch = new ServerActionBatch(
     ServerActionBatchMode.BackFill,
     target,
@@ -91,7 +91,7 @@ export function getSharePowerBatch(target: ServerData, enabled: boolean): Server
     -1,
   );
   batch.score = 2;
-  batch.enabled = !config.hasFormulaAccess && enabled;
+  batch.enabled = config.backFillPower;
   return batch;
 }
 

@@ -14,8 +14,8 @@ import {
 } from "$src/servers/server-actions/action-runner/syncedServerActionRunner";
 import { deepCopy } from "$server/utils/deepCopy";
 import type { WritableDraft } from "immer/dist/types/types-external";
-import { HackEntriesWindow } from "$lib/stores/hackEntries";
 import type { TargetLog } from "$src/runner/portCoordinator";
+import { HackEntriesWindow } from "$lib/stores/hackEntries";
 
 enablePatches();
 
@@ -29,11 +29,11 @@ export type HackEntriesState = {
 export type HackRun = ActionLogBase & {
   skipped: boolean;
   startTime: number;
-  calcStartTime: number;
   startDiff: number;
   actualStartTime: number;
   actualEndTime: number;
   endTime: number;
+  completed: boolean;
 };
 export type HackBatch = {
   target: string;
@@ -129,15 +129,24 @@ export class GameStateCollector {
         if (!draft.entries[log.fields.target]) draft.entries[log.fields.target] = {};
         if (!draft.entries[log.fields.target][log.fields.processIndex]?.length)
           draft.entries[log.fields.target][log.fields.processIndex] = [{} as any];
+
         run =
           draft.entries[log.fields.target][log.fields.processIndex][
             draft.entries[log.fields.target][log.fields.processIndex].length - 1
           ];
+        if (run.completed) {
+          run = {} as any;
+          draft.entries[log.fields.target][log.fields.processIndex].push(run);
+        }
         deepCopy(log.fields, run);
-        if (!run.calcStartTime) run.calcStartTime = log.timestamp;
+
+        if (log.message === ActionRunSkipLabel || log.message === ActionRunEndLabel)
+          run.completed = true;
+
         draft.entries[log.fields.target][log.fields.processIndex] = draft.entries[
           log.fields.target
         ][log.fields.processIndex].filter((run) => Date.now() - run.startTime < HackEntriesWindow);
+
         break;
 
       default:

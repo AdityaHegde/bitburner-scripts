@@ -20,6 +20,8 @@ export enum ServerActionBatchMode {
   Stock,
 }
 
+export const MismatchedCount = 3;
+
 export class ServerActionBatch {
   public memNeeded = 0;
   public memTaken = 0;
@@ -33,7 +35,7 @@ export class ServerActionBatch {
   public end: number;
   public percent = HackPercent;
   public enabled = true;
-  public mismatched = 3;
+  public mismatched = MismatchedCount;
 
   public serverActionPorts: ServerActionPorts;
   public readonly largestAction: number;
@@ -98,25 +100,7 @@ export class ServerActionBatch {
       ratio = this.threads[0];
     }
 
-    for (let i = 0; i < this.threads.length; i++) {
-      if (i === 0) {
-        this.threads[i] = Math.floor(this.threads[i] / ratio);
-      } else {
-        // anything that is a supporting operation has to be ceil
-        this.threads[i] = Math.ceil(this.threads[i] / ratio);
-      }
-    }
-    this.memNeeded = this.threads.reduce(
-      (mem, threads, idx) => mem + threads * ServerActionTypeToMemMap[this.actionTypes[idx]],
-      0,
-    );
-    // reset the 1st set
-    this.actionSets[0] = new ServerActionSet(this.actionTypes, this.threads);
-
-    if (this.count !== -1) {
-      this.count = Math.ceil(this.count * ratio);
-    }
-    this.ratio = ratio;
+    this.compress(ratio);
   }
 
   public startBatch(ns: NS, serverActionPorts: ServerActionPorts): boolean {
@@ -237,6 +221,28 @@ export class ServerActionBatch {
       hackTime: ShorthandNotationSchema.time.convert(hackTime),
       endDiff: ShorthandNotationSchema.time.convert(this.end - Date.now()),
     });
+  }
+
+  private compress(ratio: number) {
+    for (let i = 0; i < this.threads.length; i++) {
+      if (i === 0) {
+        this.threads[i] = Math.floor(this.threads[i] / ratio);
+      } else {
+        // anything that is a supporting operation has to be ceil
+        this.threads[i] = Math.ceil(this.threads[i] / ratio);
+      }
+    }
+    this.memNeeded = this.threads.reduce(
+      (mem, threads, idx) => mem + threads * ServerActionTypeToMemMap[this.actionTypes[idx]],
+      0,
+    );
+    // reset the 1st set
+    this.actionSets[0] = new ServerActionSet(this.actionTypes, this.threads);
+
+    if (this.count !== -1) {
+      this.count = Math.ceil(this.count * ratio);
+    }
+    this.ratio = ratio;
   }
 
   private updatedStopped(processCount: number): boolean {

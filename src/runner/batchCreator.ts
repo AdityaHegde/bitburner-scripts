@@ -12,9 +12,10 @@ import {
 } from "$src/servers/server-actions/serverActionBatchFactories";
 import type { NS } from "$src/types/gameTypes";
 import { config } from "$src/config";
+import type { ServerDataList } from "$src/servers/serverDataList";
 
 export class BatchCreator {
-  public constructor(private readonly ns: NS) {}
+  public constructor(private readonly ns: NS, private readonly serverDataList: ServerDataList) {}
 
   public createBatch(target: ServerData): ServerActionBatch {
     target.updateEphemeral();
@@ -25,7 +26,7 @@ export class BatchCreator {
 
   private getBatchForTarget(target: ServerData): ServerActionBatch {
     if (target.name === SharePowerDummyServer) {
-      return getSharePowerBatch(target, this.ns.getPlayer().factions.length > 0);
+      return getSharePowerBatch(target);
     }
 
     if (target.security > target.minSecurity) {
@@ -36,7 +37,10 @@ export class BatchCreator {
       if (target.name === "joesguns") {
         // TODO: use math to determine best exp target
         // TODO: at some point exp is not useful. do not add if level is too high
-        return getExperienceBatch(target);
+        return getExperienceBatch(
+          target,
+          this.ns.getPlayer().skills.hacking < this.serverDataList.maxPlayerLevel,
+        );
       } else if (config.hasFormulaAccess) {
         return getHackWeakenGrowWeaken(this.ns, target, 2 ** 15);
       } else {

@@ -1,7 +1,10 @@
 import type { ServerData } from "$src/servers/serverData";
 import { Heap } from "$src/utils/heap";
 import type { ServerActionBatch } from "$src/servers/server-actions/serverActionBatch";
-import { ServerActionBatchMode } from "$src/servers/server-actions/serverActionBatch";
+import {
+  MismatchedCount,
+  ServerActionBatchMode,
+} from "$src/servers/server-actions/serverActionBatch";
 import type { Logger } from "$src/utils/logger/logger";
 import type { ServerDataList } from "$src/servers/serverDataList";
 
@@ -104,8 +107,10 @@ export class TargetList {
     if (
       batch.target.money === batch.target.maxMoney &&
       batch.target.security === batch.target.minSecurity
-    )
+    ) {
+      batch.mismatched = MismatchedCount;
       return false;
+    }
     batch.mismatched--;
     return batch.mismatched <= 0;
   }

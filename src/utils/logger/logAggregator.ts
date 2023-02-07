@@ -9,9 +9,11 @@ export class LogAggregationAppender extends LogAppender {
 
   public constructor(private readonly ns: NS) {
     super();
-    this.ws = eval("window").ws;
+    // Work around the RAM cost of window
+    const win = eval("window");
+    this.ws = win.ws;
     if (!this.ws) {
-      eval("window").ws = this.ws = new WebSocket("ws://localhost:3002");
+      win.ws = this.ws = new WebSocket("ws://localhost:3002");
     }
   }
 

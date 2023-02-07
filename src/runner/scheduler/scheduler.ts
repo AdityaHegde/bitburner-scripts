@@ -156,7 +156,7 @@ export class Scheduler {
   }
 
   private tryReserve(batch: ServerActionBatch) {
-    batch.compressForMem(this.serverDataList.resourceList.availableMem);
+    batch.compressForMem(this.serverDataList.resourceList.availableMem - 4);
     const reserveInstance =
       batch.mode === ServerActionBatchMode.Hack && config.hasFormulaAccess
         ? this.multiReserve

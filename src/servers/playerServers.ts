@@ -97,9 +97,10 @@ export class PlayerServers extends OrchestratorModule {
     const money = this.ns.getServerMoneyAvailable("home");
     const serverName = PlayerServerPrefix + this.playerServerCursor;
 
-    if (this.serverDataList.serverDataNameMap[serverName].maxMem === this.playerServerSize) {
+    if (this.serverDataList.serverDataNameMap[serverName].maxMem >= this.playerServerSize) {
       // starting the script from middle.
       // TODO: do this in init
+      this.playerServerSize = this.serverDataList.serverDataNameMap[serverName].maxMem;
       this.playerServerCursor++;
       return true;
     }

@@ -22,6 +22,7 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
   public possibleTargets = new Array<ServerData>();
   public readonly resourceList: ResourceList;
 
+  public maxPlayerLevel = 0;
   private lastLevel: number;
   private serverIndex = 0;
 
@@ -39,11 +40,15 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       const serverData = new ServerData(ns, allServers[i]);
       this.allServerData[i] = serverData;
       this.serverDataNameMap[allServers[i]] = serverData;
+      if (serverData.reqLevel * 2.5 > this.maxPlayerLevel) {
+        this.maxPlayerLevel = serverData.reqLevel * 2.5;
+      }
     }
 
     for (let i = 0; i < allServers.length; i++) {
       const serverData = this.allServerData[i];
       for (const link of ns.scan(serverData.name)) {
+        if (!this.serverDataNameMap[link]) continue;
         serverData.links.set(link, this.serverDataNameMap[link]);
       }
     }
@@ -66,15 +71,7 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       this.handleNewCrackedServer(player, serverData);
     }
     if (crackedServers.length > 0) {
-      this.logger.log("ServersInfo", {
-        pendingCrack: this.allServers.slice(this.serverIndex).join(","),
-        pendingHack: this.possibleTargets
-          .map(
-            (target) =>
-              `${target.name}(${target.reqLevel * HackLevelMulti - player.skills.hacking})`,
-          )
-          .join(","),
-      });
+      this.log(player);
     }
     this.updateTargets(player);
   }
@@ -136,12 +133,7 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
 
     if (i > 0) {
       this.possibleTargets = this.possibleTargets.splice(i);
-      this.logger.log("ServersInfo", {
-        pendingCrack: this.allServers.slice(i).join(","),
-        pendingHack: this.possibleTargets
-          .map((target) => `${target.name}(${target.reqLevel})`)
-          .join(","),
-      });
+      this.log(player);
     }
   }
 
@@ -163,5 +155,16 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
 
   private addToNewTargets(serverData: ServerData) {
     binaryInsert(this.possibleTargets, serverData, (mid, ele) => mid.reqLevel - ele.reqLevel);
+  }
+
+  private log(player: Player) {
+    this.logger.log("ServersInfo", {
+      pendingCrack: this.allServers.slice(this.serverIndex).join(","),
+      pendingHack: this.possibleTargets
+        .map(
+          (target) => `${target.name}(${target.reqLevel * HackLevelMulti - player.skills.hacking})`,
+        )
+        .join(","),
+    });
   }
 }
