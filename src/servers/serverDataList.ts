@@ -1,4 +1,5 @@
 import type { Cracks } from "$src/servers/cracks";
+import { ListOfCracks } from "$src/servers/cracks";
 import { ServerData, SharePowerDummyServer } from "$src/servers/serverData";
 import type { NS, Player } from "$src/types/gameTypes";
 import { binaryInsert } from "$src/utils/arrayUtils";
@@ -6,7 +7,7 @@ import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
 import { EventEmitter } from "$src/utils/eventEmitter";
 import { isPlayerServer } from "$src/utils/isPlayerServer";
 import { ResourceList } from "$src/servers/resourceList";
-import { HackLevelMulti } from "$src/constants";
+import { HackLevelMulti, HackOverLevelMulti } from "$src/constants";
 import type { Logger } from "$src/utils/logger/logger";
 
 export type ServerDataListEvents = {
@@ -22,6 +23,11 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
   public possibleTargets = new Array<ServerData>();
   public readonly resourceList: ResourceList;
 
+  public serversByPorts: Array<Array<ServerData>> = new Array(ListOfCracks.length + 1)
+    .fill([])
+    .map(() => []);
+  public serversByPortCursor = new Array<number>(ListOfCracks.length + 1).fill(0);
+
   public maxPlayerLevel = 0;
   private lastLevel: number;
   private serverIndex = 0;
@@ -29,7 +35,7 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
   public constructor(
     private readonly ns: NS,
     private readonly logger: Logger,
-    private readonly cracks: Cracks,
+    public readonly cracks: Cracks,
     public readonly allServers: Array<string>,
   ) {
     super();
@@ -40,8 +46,13 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       const serverData = new ServerData(ns, allServers[i]);
       this.allServerData[i] = serverData;
       this.serverDataNameMap[allServers[i]] = serverData;
-      if (serverData.reqLevel * 2.5 > this.maxPlayerLevel) {
-        this.maxPlayerLevel = serverData.reqLevel * 2.5;
+      if (serverData.reqLevel * HackOverLevelMulti > this.maxPlayerLevel) {
+        this.maxPlayerLevel = serverData.reqLevel * HackOverLevelMulti;
+      }
+      if (isPlayerServer(serverData.name)) {
+        this.serversByPorts[0].unshift(serverData);
+      } else {
+        this.serversByPorts[serverData.requiredPorts].push(serverData);
       }
     }
 
@@ -94,21 +105,25 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
     this.cracks.collectCracks();
 
     const cracked = new Array<ServerData>();
-    let i = this.serverIndex;
-    for (; i < this.allServerData.length; i++) {
-      const serverData = this.allServerData[i];
-      if (!isPlayerServer(serverData.name) && !this.cracks.crackNPCServer(serverData)) {
-        // newServers are in order of required cracks
-        // so any server not cracked means successive ones are not cracked either
-        break;
-      }
 
-      // copy all src
-      copyScriptToServer(this.ns, serverData.name);
-      cracked.push(serverData);
-    }
-    if (i > this.serverIndex) {
-      this.serverIndex = i;
+    for (let crackIdx = 0; crackIdx <= this.cracks.cracks.length; crackIdx++) {
+      for (
+        let serverIdx = this.serversByPortCursor[crackIdx];
+        serverIdx < this.serversByPorts[crackIdx].length;
+        serverIdx++
+      ) {
+        const serverData = this.serversByPorts[crackIdx][serverIdx];
+        if (!isPlayerServer(serverData.name) && !this.cracks.crackNPCServer(serverData)) {
+          // newServers are in order of required cracks
+          // so any server not cracked means successive ones are not cracked either
+          break;
+        }
+
+        // copy all src
+        copyScriptToServer(this.ns, serverData.name);
+        cracked.push(serverData);
+        this.serversByPortCursor[crackIdx]++;
+      }
     }
 
     return cracked;
@@ -143,7 +158,8 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
       this.emit("newResource", serverData);
     }
 
-    if (isPlayerServer(serverData.name)) {
+    // fulcrumassets has terrible stats
+    if (isPlayerServer(serverData.name) || serverData.name === "fulcrumassets") {
       return;
     }
     if (Math.ceil(player.skills.hacking / HackLevelMulti) >= serverData.reqLevel) {
@@ -159,7 +175,15 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
 
   private log(player: Player) {
     this.logger.log("ServersInfo", {
-      pendingCrack: this.allServers.slice(this.serverIndex).join(","),
+      pendingCrack: this.serversByPorts
+        .map(
+          (serversByPorts, crackIdx) =>
+            `${crackIdx}:${serversByPorts
+              .slice(this.serversByPortCursor[crackIdx])
+              .map((s) => s.name)
+              .join(",")}`,
+        )
+        .join(" == "),
       pendingHack: this.possibleTargets
         .map(
           (target) => `${target.name}(${target.reqLevel * HackLevelMulti - player.skills.hacking})`,

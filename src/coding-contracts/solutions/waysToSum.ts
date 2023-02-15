@@ -1,38 +1,17 @@
 import type { SolutionFunction } from "$src/coding-contracts/solutions/solution";
 
-/**
- * Goes through all numbers < `num` and creates sub sums out of the remainder.
- * Uses a cache to avoid recomputing
- *
- * EG: 7 => 1+1+1+1+1+1+1
- *          Take 2 out => 2+1+1+1+1+1, 2+2+1+1+1, 2+2+2+1
- *          Take 3 out => 3+1+1+1+1, 3+2+1+1, 3+2+2, 3+3+1
- *          And so on...
- */
-function waysToSumCore(num: number, maxPart: number, cache: Map<[number, number], number>): number {
-  if (num === 1) return 0;
-  if (maxPart === 1) return 1;
-  if (cache.has([num, maxPart])) return cache.get([num, maxPart]);
+export const waysToSum: SolutionFunction<number, number> = (num) => {
+  const cache = new Array<number>(num + 1).fill(0);
+  cache[0] = 1;
 
-  let count = 1;
-  // loop through 2 to num-1
-  for (let i = 2; i <= maxPart; i++) {
-    // keep taking away `i` until num is <= 0
-    let tempNum = num - i;
-    while (tempNum > 0) {
-      // at every step
-      count += waysToSumCore(tempNum, Math.min(i - 1, tempNum - 1), cache) + (tempNum <= i ? 1 : 0);
-      tempNum -= i;
+  for (let i = 1; i < num; i++) {
+    for (let j = i; j <= num; j++) {
+      cache[j] += cache[j - i];
     }
   }
 
-  cache.set([num, maxPart], count);
-
-  return count;
-}
-
-export const waysToSum: SolutionFunction<number, number> = (input) =>
-  waysToSumCore(input, input - 1, new Map());
+  return cache[num];
+};
 
 export const waysToSumLimited: SolutionFunction<[number, Array<number>], number> = ([
   num,

@@ -3,6 +3,7 @@ import type { NS } from "../types/gameTypes";
 import { ServerActionScripts } from "$src/servers/server-actions/serverActionType";
 import { CodingContractSolverScript } from "$src/coding-contracts/codingContractScanner";
 import { CodingContractWorkerScript } from "$src/coding-contracts/codingContractSolver";
+import { CorpScript } from "$src/corporation/corpScripts";
 
 export function copyScriptToServer(ns: NS, server: string): void {
   ns.scp(
@@ -11,6 +12,7 @@ export function copyScriptToServer(ns: NS, server: string): void {
       WriteRemoteMetadataScript,
       CodingContractSolverScript,
       CodingContractWorkerScript,
+      CorpScript,
     ],
     server,
   );

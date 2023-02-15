@@ -96,16 +96,8 @@ export class ServerData {
 
   public fillGrowThreads(server: Server, player: Player) {
     this.growThreads = new Array<number>(HackBatchPercents.length);
-    let lastThreads = 0;
     for (let i = HackBatchPercents.length - 1; i >= 0; i--) {
-      this.growThreads[i] = searchGrowthThreads(
-        this.ns,
-        server,
-        player,
-        HackBatchPercents[i],
-        lastThreads,
-      );
-      lastThreads = this.growThreads[i];
+      this.growThreads[i] = searchGrowthThreads(this.ns, server, player, HackBatchPercents[i]);
     }
   }
 
@@ -165,7 +157,7 @@ function searchGrowthThreads(ns: NS, server: Server, player: Player, percent: nu
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const newMoney = getGrowth(ns, server, player, threads, percent);
-    if (newMoney >= server.moneyMax) break;
+    if (newMoney >= server.moneyMax * percent) break;
     threads++;
   }
 

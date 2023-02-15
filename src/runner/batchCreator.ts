@@ -56,7 +56,11 @@ export class BatchCreator {
       batch.score =
         (batch.target.maxMoney * batch.target.growth * batch.target.rate) /
         batch.target.minSecurity;
-      if (batch.mode === ServerActionBatchMode.Prep && batch.target.name === "joesguns")
+      if (
+        config.backFillExp &&
+        batch.mode === ServerActionBatchMode.Prep &&
+        batch.target.name === "joesguns"
+      )
         batch.score += 2 ** 30;
       return;
     }

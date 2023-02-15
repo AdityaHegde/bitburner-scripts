@@ -1,10 +1,11 @@
-export const PlayerServerPrefix = "player-server-";
+export const PlayerServerPrefix = "ps-";
 
 export const MetadataFile = "metadata.txt";
 
 export const WriteRemoteMetadataScript = "writeRemoteMetadata.js";
 
-export const BatchOperationBuffer = 500;
+export const BatchOperationStartBuffer = 5000;
+export const BatchOperationBuffer = 250;
 
 export const GrowTimeMulti = 3.2;
 export const WeakenTimeMulti = 4;
@@ -12,7 +13,9 @@ export const SharePowerTime = 10000;
 export const HackPercent = 0.25;
 // hack correction for growth
 export const HackGrowthPercent = 0.3;
+
 export const HackLevelMulti = 2;
+export const HackOverLevelMulti = 2.5;
 
 export const ServerFortifyAmount = 0.002;
 export const ServerWeakenAmount = 0.05;

@@ -22,6 +22,7 @@ function printHelp(ns: NS, schema: Array<FlagSchema>) {
 }
 
 export function validateFlags<Flags>(ns: NS, schema: Array<FlagSchema>): [boolean, Flags] {
+  schema.push(["boolean", "help", "Print help", false]);
   const flags = ns.flags(schema.map(([, key, , defValue]) => [key, defValue]));
   let valid = true;
 

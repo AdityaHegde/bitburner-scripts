@@ -15,6 +15,11 @@ glob.sync("scripts/**/*.ts").forEach((file) => {
       inlineDynamicImports: true,
     },
     plugins: [typescript(), nodeResolve()],
+    onwarn: (warning, warn) => {
+      // suppress eval warnings
+      if (warning.code === "EVAL") return;
+      warn(warning);
+    },
   });
 });
 

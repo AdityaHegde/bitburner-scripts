@@ -20,7 +20,6 @@ export class GameScripts {
         server: "home",
         content,
       });
-      console.log(`Pushed file=${file}`);
     }
     this.lastChecked = Date.now();
   }

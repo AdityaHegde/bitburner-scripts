@@ -4,7 +4,7 @@ import {
 } from "$src/servers/server-actions/serverActionType";
 import type { NS } from "$src/types/gameTypes";
 import { newExitedPacket } from "$src/ports/packets/exitedPacket";
-import { BatchOperationBuffer } from "$src/constants";
+import { BatchOperationBuffer, BatchOperationStartBuffer } from "$src/constants";
 import { newServerActionCompleted } from "$src/ports/packets/serverActionCompletedPacket";
 import { Logger } from "$src/utils/logger/logger";
 import { newBatchStartedPacket } from "$src/ports/packets/batchStartedPacket";
@@ -109,11 +109,11 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     while (true) {
       // let the other code run. this will trigger hackTime update if possible
       await this.ns.sleep(5);
-      if (!(await this.waitForStarts())) break;
+      if (!(await this.waitForBatchStarts())) break;
 
       await this.runAction();
 
-      await this.waitForEnds();
+      await this.waitForBatchEnds();
     }
 
     if (this.reference.processIndex === 0) {
@@ -132,7 +132,7 @@ export class SyncedServerActionRunner extends ServerActionRunner {
       const [server, stock] = this.serverActionPorts.getTargetInfo();
       const [, , , endTime] = this.serverActionPorts.getActionInfo();
 
-      if (!(await this.waitToStart(c))) {
+      if (!(await this.waitToStartAction(c))) {
         continue;
       }
       const actualStartTime = Date.now();
@@ -153,12 +153,12 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     }
   }
 
-  private async waitToStart(c: number, startTime?: number): Promise<boolean> {
+  private async waitToStartAction(c: number, startTime?: number): Promise<boolean> {
     const [, , hackTime, notPrepped] = this.serverActionPorts.getTargetInfo();
     const [, ends, , endTime] = this.serverActionPorts.getActionInfo();
     const skipHack = this.serverAction === ServerActionType.Hack && notPrepped === 1 && c === 0;
 
-    startTime ??= this.getStartTime(hackTime, c, endTime);
+    startTime = this.getStartTime(hackTime, c, endTime);
 
     const startDiff = startTime - Date.now();
     // if some action ended before this could start, it was skipped. skip this as well
@@ -182,7 +182,7 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     if (startDiff > BatchOperationBuffer / 4) {
       await this.ns.sleep(startDiff);
       // check again to make sure timing is correct after waiting
-      return this.waitToStart(c, startTime);
+      return this.waitToStartAction(c, startTime);
     }
     return true;
   }
@@ -191,15 +191,13 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     const runTimeOffset =
       hackTime * ServerActionTimeMultipliers[this.serverAction] * (this.reference.countMulti - c);
     const interSetOffset =
-      (this.reference.setCount - this.reference.setIndex - 1) *
-      this.reference.actionCount *
-      BatchOperationBuffer;
+      this.reference.setCount * this.reference.actionCount * BatchOperationBuffer;
     const intraSetOffset =
       (this.reference.actionCount - this.reference.actionIndex - 1) * BatchOperationBuffer;
     return endTime - runTimeOffset - interSetOffset - intraSetOffset;
   }
 
-  private async waitForStarts(): Promise<boolean> {
+  private async waitForBatchStarts(): Promise<boolean> {
     let [starts, , count] = this.serverActionPorts.getActionInfo();
     // we need the additional starts check to make sure count wasn't set to 0 while processes were starting.
     if (count === 0 && starts === 0) return false;
@@ -222,7 +220,11 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     const totalBatchOffset =
       (this.reference.actionCount + 1) * BatchOperationBuffer +
       (this.reference.setCount + 1) * BatchOperationBuffer;
-    const endTime = Date.now() + totalBatchOffset + hackTime * this.reference.longestAction;
+    const endTime =
+      Date.now() +
+      totalBatchOffset +
+      hackTime * (this.reference.longestAction + 1) +
+      BatchOperationStartBuffer;
     this.serverActionPorts.setTargetInfo(server, stock, hackTime, endTime);
     await this.responsePort.write(
       JSON.stringify(newBatchStartedPacket(this.commandPort, hackTime, endTime)),
@@ -244,7 +246,7 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     this.serverActionPorts.setActionInfo(starts + 1, ends, count, endTime);
   }
 
-  private async waitForEnds() {
+  private async waitForBatchEnds() {
     this.updateEnds();
     let [starts, ends, count, endTime] = this.serverActionPorts.getActionInfo();
     this.logger.log<ActionWaitForEndLog>(ActionWaitForEndLabel, {

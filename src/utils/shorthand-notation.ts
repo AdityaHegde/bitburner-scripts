@@ -21,8 +21,8 @@ export class ShorthandNotationSchema {
     2,
   );
   public static usd = new ShorthandNotationSchema(
-    ["", ..."kmbtq".split("")],
-    new Array(5).fill(1000),
+    ["", ..."kmbtqQ".split("")],
+    new Array(6).fill(1000),
     "",
     "$",
     2,

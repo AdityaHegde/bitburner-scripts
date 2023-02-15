@@ -24,12 +24,21 @@ export class Orchestrator {
 
   public init() {
     this.serverDataList.init();
+    for (const module of this.modules) {
+      module.init();
+    }
   }
 
   public async start() {
+    for (const module of this.modules) {
+      if (!module.isAsync) continue;
+      module.process();
+    }
+
     while (!this.ender.shouldEnd()) {
       this.serverDataList.process();
       for (const module of this.modules) {
+        if (module.isAsync) continue;
         await module.process();
       }
       await this.scheduler.process();

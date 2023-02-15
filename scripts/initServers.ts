@@ -7,12 +7,22 @@ import type { NS } from "$src/types/gameTypes";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
 import { Logger } from "$src/utils/logger/logger";
 import { isPlayerServer } from "$src/utils/isPlayerServer";
+import { validateFlags } from "$src/utils/validateFlags";
+import type { EarlyGameFlags } from "./runner";
 
 /**
  * Does a breadth first search for accessible hosts within the city.
  * Saves the identified servers in {@link Metadata.newServers}
  */
 export async function main(ns: NS) {
+  const [ok] = validateFlags<EarlyGameFlags>(ns, [
+    ["boolean", "noPurchase", "No purchasing.", false],
+    ["boolean", "corp", "Enable corp.", false],
+  ]);
+  if (!ok) {
+    return;
+  }
+
   const logger = Logger.ConsoleLogger(ns, "InitServers");
   const metadata: Metadata = newMetadata();
 
@@ -77,6 +87,21 @@ export async function main(ns: NS) {
     await ns.sleep(100);
   } while (newFoundServersCount > 0);
 
+  if (!metadata.runnerServer) {
+    for (const server of metadata.newServers) {
+      const serverMem = ns.getServerMaxRam(server);
+      if (serverMem < runnerScriptMem) continue;
+      metadata.runnerServer = server;
+      break;
+    }
+  }
+
+  if (!metadata.runnerServer) {
+    ns.tprintf("Failed to assign runner");
+    return;
+  }
+  ns.tprintf("Running %s on %s", runnerScript, metadata.runnerServer);
+
   npcServers.sort((a, b) => {
     const portsA = ns.getServerNumPortsRequired(a);
     const portsB = ns.getServerNumPortsRequired(b);
@@ -87,7 +112,7 @@ export async function main(ns: NS) {
   });
   metadata.newServers.push(...npcServers);
 
-  await startRemoteScript(ns, metadata, runnerScript);
+  await startRemoteScript(ns, metadata, runnerScript, ...ns.args);
 
   saveMetadata(ns, metadata);
 }

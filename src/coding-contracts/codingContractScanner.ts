@@ -20,6 +20,10 @@ export class CodingContractScanner extends OrchestratorModule {
     super();
   }
 
+  public init() {
+    // nothing
+  }
+
   public async process(): Promise<void> {
     this.activeContracts.clear();
     const now = Date.now();

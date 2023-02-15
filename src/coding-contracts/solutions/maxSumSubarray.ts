@@ -1,4 +1,5 @@
 import type { SolutionFunction } from "$src/coding-contracts/solutions/solution";
+import { findInArray } from "$src/utils/arrayUtils";
 
 export const maxSumSubarray: SolutionFunction<Array<number>, number> = (input) => {
   let maxSum = 0;
@@ -13,5 +14,7 @@ export const maxSumSubarray: SolutionFunction<Array<number>, number> = (input) =
     }
   }
 
-  return maxSum;
+  if (maxSum > 0) return maxSum;
+  const [, largest] = findInArray(input, (a, b) => a > b);
+  return largest;
 };

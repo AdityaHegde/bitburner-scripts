@@ -8,6 +8,11 @@ export const ListOfCracks: Array<string> = [
   "HTTPWorm.exe",
   "SQLInject.exe",
 ];
+export const CostOfCracks: Array<number> = [500e3, 1500e3, 5e6, 30e6, 250e6];
+export const CostOfTOR = 200e3;
+
+export const FormulaName = "Formulas.exe";
+export const FormulaPrice = 5e9;
 
 export class Cracks {
   public cracks = new Array<number>();

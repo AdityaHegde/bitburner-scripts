@@ -1,6 +1,6 @@
 type VoidType = void | Promise<void>;
 type ListenerFunction = (...args: Array<any>) => VoidType;
-type FunctionArgs<T> = T extends (...args: infer R) => VoidType ? R : any;
+export type FunctionArgs<T> = T extends (...args: infer R) => VoidType ? R : any;
 type EventsType = {
   [event: string]: ListenerFunction;
 };
