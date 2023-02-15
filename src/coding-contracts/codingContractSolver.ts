@@ -6,15 +6,32 @@ import type { CodingContractFile } from "$src/coding-contracts/codingContractSca
 export const CodingContractWorkerScript = "codingContractWorker.js";
 
 export class CodingContractSolver {
-  public constructor(private readonly ns: NS, private readonly logger: Logger) {}
+  private worker: Worker;
 
-  public async solveContracts(contracts: Array<CodingContractFile>) {
+  public constructor(
+    private readonly ns: NS,
+    private readonly logger: Logger,
+    private readonly cleanup = false,
+  ) {}
+
+  public async solveContracts(contracts: Array<CodingContractFile>): Promise<number> {
+    const workerCode = new Blob([this.ns.read(CodingContractWorkerScript)], {
+      type: "application/javascript",
+    });
+    this.worker = new Worker(URL.createObjectURL(workerCode));
+
+    let failedCount = 0;
     for (const contract of contracts) {
-      await this.solveContract(contract);
+      if (!(await this.solveContract(contract))) {
+        failedCount++;
+      }
     }
+
+    this.worker.terminate();
+    return failedCount;
   }
 
-  private async solveContract([contractFile, server]: CodingContractFile) {
+  private async solveContract([contractFile, server]: CodingContractFile): Promise<boolean> {
     let name: string;
     let input: any;
     try {
@@ -25,7 +42,7 @@ export class CodingContractSolver {
         server,
         err: err.message,
       });
-      return;
+      return false;
     }
 
     if (!NameToSolutionFunction[name]) {
@@ -33,30 +50,33 @@ export class CodingContractSolver {
         server,
         name,
       });
-      return;
+      return false;
     }
 
-    const workerCode = new Blob([this.ns.read(CodingContractWorkerScript)], {
-      type: "application/javascript",
-    });
-    const worker = new Worker(URL.createObjectURL(workerCode));
-    worker.postMessage([name, input]);
+    this.worker.postMessage([name, input]);
     const output = await new Promise<any>((resolve) => {
-      worker.onmessage = (e) => {
-        worker.terminate();
+      this.worker.onmessage = (e) => {
         resolve(e.data);
+      };
+      this.worker.onerror = () => {
+        resolve("");
       };
     });
 
     try {
       const reward = this.ns.codingcontract.attempt(output, contractFile, server);
-      this.logger.info("Solved", {
+      if (reward !== "") return true;
+      this.logger.error("Incorrect", {
         server,
         name,
         input,
         output,
         reward,
       });
+
+      if (this.cleanup) {
+        this.ns.rm(contractFile, server);
+      }
     } catch (err) {
       this.logger.error("CodingContractError", {
         server,
@@ -66,5 +86,7 @@ export class CodingContractSolver {
         err: err.message,
       });
     }
+
+    return false;
   }
 }

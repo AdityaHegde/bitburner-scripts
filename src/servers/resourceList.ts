@@ -66,7 +66,6 @@ export class ResourceList {
     fullReserve: boolean,
   ): number {
     let possibleThreads = Math.floor((serverData.mem - serverData.reservedMem) / memPerThread);
-    if (possibleThreads === 0 || (possibleThreads < threads && fullReserve)) return 0;
     // this.logger.log("Reserve", {
     //   target,
     //   server: serverData.name,
@@ -75,6 +74,7 @@ export class ResourceList {
     //   possibleThreads,
     //   threads,
     // });
+    if (possibleThreads === 0 || (possibleThreads < threads && fullReserve)) return 0;
 
     // threads = -1 denotes flood assign
     if (threads >= 0) possibleThreads = Math.min(possibleThreads, threads);

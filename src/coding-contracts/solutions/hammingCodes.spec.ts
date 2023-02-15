@@ -17,6 +17,11 @@ describe("hammingCodes", () => {
     expect(encodeHammingCode(21)).toBe("1001101011");
     expect(decodeHammingCode("1001101011")).toBe("21");
     expect(decodeHammingCode("1001101111")).toBe("21");
+
+    expect(encodeHammingCode(1745663695629)).toBe(
+      "101101000101100111100011010101001001101100001101",
+    );
+    expect(decodeHammingCode(encodeHammingCode(1745663695629))).toBe("1745663695629");
   });
 
   it("first 100", () => {

@@ -6,7 +6,7 @@ type VisitedNode = {
   y: number;
   key: string;
   distFromStart: number;
-  distFromEnd: number;
+  heuristic: number;
   dir: string;
   from: VisitedNode;
 };
@@ -14,7 +14,7 @@ type VisitedNode = {
 function getPath(node: VisitedNode): string {
   let path = "";
   while (node) {
-    path += node.dir;
+    path = node.dir + path;
     node = node.from;
   }
   return path;
@@ -23,10 +23,10 @@ function getPath(node: VisitedNode): string {
 export const shortestPath: SolutionFunction<Array<Array<number>>, string> = (input) => {
   const queue = new Heap<VisitedNode>(
     (a, b) => {
-      if (a.distFromStart === b.distFromStart) {
-        return b.distFromEnd - a.distFromEnd;
+      if (a.heuristic === b.heuristic) {
+        return b.distFromStart - a.distFromStart;
       }
-      return a.distFromStart - b.distFromStart;
+      return b.heuristic - a.heuristic;
     },
     (a) => a.key,
   );
@@ -35,7 +35,7 @@ export const shortestPath: SolutionFunction<Array<Array<number>>, string> = (inp
     y: 0,
     key: "0_0",
     distFromStart: 0,
-    distFromEnd: input.length + input[0].length,
+    heuristic: input.length + input[0].length - 2,
     dir: "",
     from: undefined,
   });
@@ -58,17 +58,19 @@ export const shortestPath: SolutionFunction<Array<Array<number>>, string> = (inp
     const distFromEnd = input.length - y - 1 + (input[0].length - x - 1);
     if (queue.has(key)) {
       const existing = queue.get(key);
-      if (existing.distFromStart < distFromStart) return;
+      if (existing.distFromStart <= distFromStart) return;
+      existing.heuristic = existing.heuristic - existing.distFromStart + distFromStart;
       existing.distFromStart = distFromStart;
       existing.dir = dir;
       existing.from = from;
+      queue.updateItem(existing);
     } else {
       queue.push({
         x,
         y,
         key,
         distFromStart,
-        distFromEnd,
+        heuristic: distFromStart + distFromEnd,
         dir,
         from,
       });

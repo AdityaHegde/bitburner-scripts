@@ -30,7 +30,7 @@ function arrayJumpingGameCore(input: Array<number>): number {
 
   while (!nextJump.empty()) {
     const jump = nextJump.pop();
-    if (input[jump.index] > jump.distance) return jump.jumps + 1;
+    if (input[jump.index] >= jump.distance) return jump.jumps + 1;
     visited.add(jump.index);
 
     // go through all the nodes we can jump to

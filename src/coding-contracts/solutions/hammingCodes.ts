@@ -5,25 +5,28 @@ export const encodeHammingCode: SolutionFunction<number, string> = (input) => {
   let parityBitCount = Math.ceil(Math.log2(inputBitCount));
   let codeSize = inputBitCount + parityBitCount + 1;
   // size correction
-  if (2 ** parityBitCount < codeSize) {
+  while (2 ** parityBitCount < codeSize) {
     parityBitCount++;
     codeSize++;
   }
+
+  // we need to do this because input could be > MaxSafeInt
+  const inputBits = input.toString(2).split("");
 
   const code = new Array<number>(codeSize).fill(0);
   let parity = 0;
   let ones = 0;
 
-  for (let inputBit = inputBitCount - 1, bitIndex = 1; inputBit >= 0; bitIndex++) {
+  for (let inputBit = 0, bitIndex = 1; inputBit < inputBits.length; bitIndex++) {
     const log = Math.log2(bitIndex);
     if (log === Math.floor(log)) {
       // if it is a parity bit position ignore
       continue;
     }
 
-    const bit = (input & (2 ** inputBit)) === 0 ? 0 : 1;
+    const bit = inputBits[inputBit] === "0" ? 0 : 1;
     code[bitIndex] = bit;
-    inputBit--;
+    inputBit++;
     if (!bit) continue;
 
     // add to parity if it is a `1`

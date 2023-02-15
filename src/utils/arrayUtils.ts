@@ -1,5 +1,8 @@
-export function findInArray<T>(arr: Array<T>, compare: (a: T, b: T) => boolean): T {
-  if (arr.length === 0) return undefined;
+export function findInArray<T>(
+  arr: Array<T>,
+  compare: (a: T, b: T) => boolean,
+): [index: number, element: T] {
+  if (arr.length === 0) return [-1, undefined];
 
   let foundIdx = 0;
 
@@ -9,7 +12,7 @@ export function findInArray<T>(arr: Array<T>, compare: (a: T, b: T) => boolean):
     }
   }
 
-  return arr[foundIdx];
+  return [foundIdx, arr[foundIdx]];
 }
 
 export function binarySearch<T>(

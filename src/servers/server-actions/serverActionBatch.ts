@@ -64,10 +64,6 @@ export class ServerActionBatch {
     this.actionSets.push(new ServerActionSet(actionTypes, threads));
   }
 
-  public reserveForSet(resourceList: ResourceList, serverAction: ServerActionSet, index = 0) {
-    return serverAction.reserve(this.target.name, resourceList, index);
-  }
-
   public unReserve(resourceList: ResourceList) {
     for (const serverActionSet of this.actionSets) {
       serverActionSet.unReserve(resourceList);
@@ -177,7 +173,7 @@ export class ServerActionBatch {
   }
 
   public canEndBefore(batch: ServerActionBatch) {
-    return this.end - batch.longestAction * batch.target.rate > 0;
+    return this.end - Date.now() - batch.longestAction * batch.target.rate > 0;
   }
 
   public reservedLog(logger: Logger, resourceList: ResourceList) {
@@ -205,7 +201,7 @@ export class ServerActionBatch {
     });
   }
 
-  public startedLog(logger: Logger, hackTime: number) {
+  public startedLog(logger: Logger) {
     logger.info("BatchStarted", {
       server: this.target.name,
       mode: ServerActionBatchMode[this.mode],
@@ -218,8 +214,9 @@ export class ServerActionBatch {
       count: this.count,
       ratio: this.ratio,
       percent: this.percent,
-      hackTime: ShorthandNotationSchema.time.convert(hackTime),
-      endDiff: ShorthandNotationSchema.time.convert(this.end - Date.now()),
+      time: ShorthandNotationSchema.time.convert(
+        this.target.times[ServerActionType.Hack] * this.longestAction,
+      ),
     });
   }
 

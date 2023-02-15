@@ -50,6 +50,7 @@ export class ScriptScheduler {
     });
     this.serverDataList.resourceList.unClaimMem(serverData, schedule.mem);
     this.runningScripts.delete(script);
+    if (schedule.chain) this.reserveForSchedule(schedule.chain);
   }
 
   private reserveForSchedule(schedule: ScriptSchedule) {
@@ -71,7 +72,14 @@ export class ScriptScheduler {
       args: schedule.args,
     });
     this.serverDataList.resourceList.claimMem(serverData, schedule.mem);
-    this.ns.exec(schedule.script, serverData.name, 1, ...schedule.args);
+    if (!this.ns.exec(schedule.script, serverData.name, 1, ...schedule.args)) {
+      this.logger.error("FailedToStartScript", {
+        server: serverData.name,
+        script: schedule.script,
+        mem: schedule.mem,
+        args: schedule.args,
+      });
+    }
     this.runningScripts.set(schedule.script, [serverData, schedule]);
     return true;
   }

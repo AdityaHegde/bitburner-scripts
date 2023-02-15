@@ -23,9 +23,13 @@ import { generateIPAddresses } from "$src/coding-contracts/solutions/generateIPA
 import { maxSumSubarray } from "$src/coding-contracts/solutions/maxSumSubarray";
 import { shortestPath } from "$src/coding-contracts/solutions/shortestPath";
 import { CeaserCipher, VigenereCipher } from "$src/coding-contracts/solutions/Ciphers";
-import { LempelZivDecompression } from "$src/coding-contracts/solutions/LempelZiv";
+import {
+  LempelZivCompression,
+  LempelZivDecompression,
+} from "$src/coding-contracts/solutions/LempelZiv";
 import { sanitizeParentheses } from "$src/coding-contracts/solutions/sanitizeParentheses";
 import { validMathExpressions } from "$src/coding-contracts/solutions/validMathExpressions";
+import { twoColoringOfGraph } from "$src/coding-contracts/solutions/twoColoringOfGraph";
 
 export type SolutionFunction<InputType, OutputType> = (input: InputType) => OutputType;
 
@@ -51,12 +55,10 @@ export const NameToSolutionFunction: Record<string, SolutionFunction<any, any>> 
   "Find All Valid Math Expressions": validMathExpressions,
   "HammingCodes: Integer to Encoded Binary": encodeHammingCode,
   "HammingCodes: Encoded Binary to Integer": decodeHammingCode,
-  // TODO
-  "Proper 2-Coloring of a Graph": undefined,
+  "Proper 2-Coloring of a Graph": twoColoringOfGraph,
   "Compression I: RLE Compression": lreCompression,
   "Compression II: LZ Decompression": LempelZivDecompression,
-  // TODO
-  "Compression III: LZ Compression": undefined,
+  "Compression III: LZ Compression": LempelZivCompression,
   "Encryption I: Caesar Cipher": CeaserCipher,
   "Encryption II: Vigenère Cipher": VigenereCipher,
 };

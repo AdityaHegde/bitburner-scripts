@@ -23,18 +23,23 @@ export enum MidGameBackFill {
 export type MidGameFlags = {
   mode: MidGameMode;
   backfill: MidGameBackFill;
-  help: boolean;
+  noPurchase: boolean;
+  corp: boolean;
 };
 
 export async function main(ns: NS) {
   const [ok, flags] = validateFlags<MidGameFlags>(ns, [
     ["string", "mode", "Mode of the script.", MidGameMode.Default, Object.keys(MidGameMode)],
     ["string", "backfill", "Back fill type", MidGameBackFill.Exp, Object.keys(MidGameBackFill)],
-    ["boolean", "help", "Print help", false],
+    ["boolean", "noPurchase", "No purchasing.", false],
+    ["boolean", "corp", "Enable corp.", false],
   ]);
   if (!ok) {
     return;
   }
+
+  config.disablePurchasing = flags.noPurchase;
+  config.corp = flags.corp;
 
   const mem = ns.getScriptRam("midGame.js");
 

@@ -45,6 +45,11 @@ const testCases = [
     v1: 1,
     v2: 8,
   },
+  {
+    input: [3, 0, 4, 7, 4, 2, 0, 3, 0, 0, 0],
+    v1: 1,
+    v2: 2,
+  },
 ];
 
 describe("arrayJumpingGame", () => {

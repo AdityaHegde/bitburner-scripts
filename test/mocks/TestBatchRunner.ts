@@ -30,13 +30,11 @@ export class TestBatchRunner {
 
     this.actions = new Array(setCount);
     this.actionCallbacks = new Array(setCount);
-    const longestAction =
-      ServerActionTimeMultipliers[
-        findInArray(
-          actionTypes,
-          (a, b) => ServerActionTimeMultipliers[a] > ServerActionTimeMultipliers[b],
-        )
-      ];
+    const [, longestActionMulti] = findInArray(
+      actionTypes,
+      (a, b) => ServerActionTimeMultipliers[a] > ServerActionTimeMultipliers[b],
+    );
+    const longestAction = ServerActionTimeMultipliers[longestActionMulti];
 
     let processIndex = 0;
     for (let setIndex = 0; setIndex < setCount; setIndex++) {

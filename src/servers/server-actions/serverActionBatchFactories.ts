@@ -5,11 +5,11 @@ import {
   ServerActionBatchMode,
 } from "$src/servers/server-actions/serverActionBatch";
 import {
+  BatchOperationBuffer,
   HackBatchPercents,
   HackGroupSize,
   HackGrowthPercent,
   HackPercent,
-  Second,
   ServerWeakenAmount,
   WeakenThreadsPerGrowCall,
   WeakenThreadsPerHackCall,
@@ -46,7 +46,7 @@ export function getGrowWeaken(ns: NS, target: ServerData): ServerActionBatch {
 }
 
 export function getEarlyHackWeakenGrowWeaken(ns: NS, target: ServerData): ServerActionBatch {
-  let hacks = Math.ceil(HackPercent / target.rate);
+  let hacks = Math.floor(HackPercent / target.rate);
   const hacksPerRun = Math.floor(hacks / HackGroupSize);
   hacks = hacksPerRun * HackGroupSize;
   const grows = Math.ceil(
@@ -126,7 +126,7 @@ export function getHackWeakenGrowWeaken(
   const chance = ns.formulas.hacking.hackChance(server, player);
   batch.percent = percent;
   batch.enabled = !config.prepOnly;
-  if (target.times[ServerActionType.Hack] < Second) {
+  if (target.times[ServerActionType.Hack] < 4 * BatchOperationBuffer) {
     // sub second hacks add too much to processing
     batch.score = 0;
     batch.enabled = false;
@@ -152,7 +152,7 @@ function getPercentAndThreads(
   for (let i = 0; i < HackBatchPercents.length; i++) {
     percent = HackBatchPercents[i];
 
-    const hacks = Math.ceil(percent / ns.formulas.hacking.hackPercent(server, player));
+    const hacks = Math.floor(percent / ns.formulas.hacking.hackPercent(server, player));
     const hacksWeakens = Math.ceil(hacks / WeakenThreadsPerHackCall);
     const grows = serverData.growThreads[i];
     const growsWeakens = Math.ceil(grows / WeakenThreadsPerGrowCall);

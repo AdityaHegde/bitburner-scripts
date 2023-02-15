@@ -32,6 +32,7 @@ const testCases = [
     output: 24,
   },
   { input: [8, 9, -4, 8, 1, -8, -9, 4, 8, -7], output: 22 },
+  { input: [-10, -10, -9, -9, -2], output: -2 },
 ];
 
 describe("maxSumSubarray", () => {

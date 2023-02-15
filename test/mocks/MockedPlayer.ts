@@ -1,6 +1,6 @@
 export class MockedPlayer {
   public hackingLevel = 1;
-  public money: number;
+  public money = 0;
   private exp = 0;
 
   public add(exp: number, money: number) {

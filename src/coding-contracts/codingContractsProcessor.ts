@@ -12,6 +12,10 @@ export class CodingContractsProcessor extends OrchestratorModule {
     super();
   }
 
+  public init() {
+    // nothing
+  }
+
   public async process() {
     await this.scanner.process();
     if (this.scanner.activeContracts.size === 0) return;

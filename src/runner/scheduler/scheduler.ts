@@ -18,6 +18,7 @@ import { asyncWait, waitUntil } from "$server/utils/asyncUtils";
 import { SimpleBatchReserve } from "$src/servers/server-actions/batch-reserve/SimpleBatchReserve";
 import { MultipleBatchReserve } from "$src/servers/server-actions/batch-reserve/MultipleBatchReserve";
 import { config } from "$src/config";
+import { getCorpScriptSchedule } from "$src/corporation/corpScripts";
 
 export class Scheduler {
   private changed = false;
@@ -54,6 +55,7 @@ export class Scheduler {
         mode: ServerActionBatchMode[batch.mode],
       });
     });
+    if (config.corp) this.addScriptSchedule(getCorpScriptSchedule(ns));
   }
 
   public async process() {
@@ -79,6 +81,7 @@ export class Scheduler {
 
     this.unwindQueue(this.targetList.hackQueue);
     this.unwindQueue(this.targetList.prepQueue);
+    // only backfill if there are no other ones waiting
     if (
       this.targetList.stopping.empty() ||
       this.targetList.stopping.peek().mode !== ServerActionBatchMode.BackFill
@@ -144,27 +147,38 @@ export class Scheduler {
     while (!queue.empty()) {
       const batch = queue.peek();
 
-      if (this.targetList.shouldStart(this.serverDataList, batch)) break;
+      if (!this.targetList.shouldStart(this.serverDataList, batch)) break;
 
       if (!batch.enabled || !this.tryReserve(batch)) break;
 
       this.claimBatch(batch);
       this.targetList.batchRunning(batch);
-      batch.startedLog(this.logger, batch.target.times[ServerActionType.Hack]);
+      batch.startedLog(this.logger);
       queue.pop();
     }
   }
 
   private tryReserve(batch: ServerActionBatch) {
-    batch.compressForMem(this.serverDataList.resourceList.availableMem - 4);
-    const reserveInstance =
-      batch.mode === ServerActionBatchMode.Hack && config.hasFormulaAccess
-        ? this.multiReserve
-        : this.simpleReserve;
-    const reserveResult = reserveInstance.reserve(batch, this.serverDataList.resourceList);
-    if (reserveResult) return true;
+    let memOffset = 1;
+    let reserveResult = false;
 
-    batch.unReserve(this.serverDataList.resourceList);
+    while (!reserveResult && memOffset < this.serverDataList.resourceList.availableMem) {
+      batch.compressForMem(this.serverDataList.resourceList.availableMem - memOffset);
+      const reserveInstance =
+        batch.mode === ServerActionBatchMode.Hack && config.hasFormulaAccess
+          ? this.multiReserve
+          : this.simpleReserve;
+      reserveResult = reserveInstance.reserve(batch, this.serverDataList.resourceList);
+      // batch.reservedLog(this.logger, this.serverDataList.resourceList);
+      if (reserveResult) return true;
+
+      batch.unReserve(this.serverDataList.resourceList);
+      // only preps will be compressed for now
+      // TODO: compress hacks as well
+      if (batch.mode !== ServerActionBatchMode.Prep) break;
+      memOffset = memOffset << 1;
+    }
+
     return false;
   }
 

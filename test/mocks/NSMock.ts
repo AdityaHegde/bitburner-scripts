@@ -37,8 +37,11 @@ import type {
 import { MockedPlayer } from "./MockedPlayer";
 import { MockedPort } from "./MockedPort";
 import { MockedScript } from "./MockedScript";
-import type { MockedServer } from "./MockedServer";
+import { MockedServer } from "./MockedServer";
 import { getMockedMetadata } from "./mockFactory";
+import { MockedSingularity } from "./MockedSingularity";
+
+export const PurchaseServerCostPerRam = 100000;
 
 export class NSMock implements NS {
   args: (string | number | boolean)[];
@@ -59,12 +62,20 @@ export class NSMock implements NS {
 
   public server: string;
   public threads: number;
+  pid: number;
+
+  public hasFiles: Record<string, boolean> = {};
+  public hasTor = false;
+
+  private playerServers = new Array<string>();
 
   public constructor(
     private readonly servers: Record<string, MockedServer> = {},
     private readonly ports: Record<number, MockedPort> = {},
-    private readonly player = new MockedPlayer(),
-  ) {}
+    public readonly player = new MockedPlayer(),
+  ) {
+    this.singularity = new MockedSingularity(this);
+  }
 
   // custom methods used in tests
 
@@ -120,7 +131,7 @@ export class NSMock implements NS {
   }
 
   fileExists(filename: string, host?: string): boolean {
-    return false;
+    return this.hasFiles[filename];
   }
 
   flags(schema: [string, string | number | boolean | string[]][]): {
@@ -177,23 +188,23 @@ export class NSMock implements NS {
   }
 
   getPurchasedServerCost(ram: number): number {
-    return 0;
+    return ram * PurchaseServerCostPerRam;
   }
 
   getPurchasedServerLimit(): number {
-    return 0;
+    return 5;
   }
 
   getPurchasedServerMaxRam(): number {
-    return 0;
+    return 2 ** 8;
   }
 
   getPurchasedServerUpgradeCost(hostname: string, ram: number): number {
-    return 0;
+    return (ram - this.servers[hostname].maxRam) * PurchaseServerCostPerRam;
   }
 
   getPurchasedServers(): string[] {
-    return [];
+    return this.playerServers;
   }
 
   getRecentScripts(): RecentScript[] {
@@ -253,6 +264,7 @@ export class NSMock implements NS {
   }
 
   getServerMoneyAvailable(host: string): number {
+    if (host === "home") return this.player.money;
     return this.servers[host].moneyAvailable;
   }
 
@@ -338,7 +350,7 @@ export class NSMock implements NS {
   }
 
   hasTorRouter(): boolean {
-    return false;
+    return this.hasTor;
   }
 
   httpworm(host: string): void {}
@@ -397,7 +409,10 @@ export class NSMock implements NS {
   }
 
   purchaseServer(hostname: string, ram: number): string {
-    return "";
+    this.servers[hostname] = new MockedServer(hostname, 5, 1, 0, 1, 0, ram, 0, 0);
+    this.player.money -= ram * PurchaseServerCostPerRam;
+    this.playerServers.push(hostname);
+    return hostname;
   }
 
   read(filename: string): string {
@@ -482,7 +497,9 @@ export class NSMock implements NS {
   }
 
   upgradePurchasedServer(hostname: string, ram: number): boolean {
-    return false;
+    this.player.money -= (ram - this.servers[hostname].maxRam) * PurchaseServerCostPerRam;
+    this.servers[hostname].maxRam = ram;
+    return true;
   }
 
   vsprintf(format: string, args: any[]): string {
@@ -510,5 +527,22 @@ export class NSMock implements NS {
 
   writePort(port: number, data: string | number): PortData | null {
     return undefined;
+  }
+
+  formatNumber(
+    n: number,
+    fractionalDigits?: number,
+    suffixStart?: number,
+    isInteger?: boolean,
+  ): string {
+    throw new Error("Method not implemented.");
+  }
+
+  formatRam(n: number, fractionalDigits?: number): string {
+    throw new Error("Method not implemented.");
+  }
+
+  formatPercent(n: number, fractionalDigits?: number): string {
+    throw new Error("Method not implemented.");
   }
 }

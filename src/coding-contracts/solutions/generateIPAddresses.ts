@@ -10,14 +10,14 @@ function isValidPart(part: string) {
 export const generateIPAddresses: SolutionFunction<string, Array<string>> = (input) => {
   const possibilities = new Array<string>();
 
-  for (let fourthIdx = 4; fourthIdx < input.length; fourthIdx++) {
+  for (let fourthIdx = 3; fourthIdx < input.length; fourthIdx++) {
     let partFour = input.substring(fourthIdx);
     while (!isValidPart(partFour)) {
       fourthIdx++;
       partFour = input.substring(fourthIdx);
     }
 
-    for (let thirdIdx = 3; thirdIdx < fourthIdx; thirdIdx++) {
+    for (let thirdIdx = 2; thirdIdx < fourthIdx; thirdIdx++) {
       let partThree = input.substring(thirdIdx, fourthIdx);
       while (!isValidPart(input.substring(thirdIdx, fourthIdx)) && thirdIdx < fourthIdx) {
         thirdIdx++;

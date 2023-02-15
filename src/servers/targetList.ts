@@ -35,6 +35,7 @@ export class TargetList {
 
   public readonly running: Heap<ServerActionBatch>;
   public readonly stopping: Heap<ServerActionBatch>;
+  public hacking = 0;
   public prepping = 0;
 
   public constructor() {
@@ -69,19 +70,24 @@ export class TargetList {
   public batchRunning(batch: ServerActionBatch) {
     this.running.push(batch);
     if (batch.mode === ServerActionBatchMode.Prep) this.prepping++;
+    else if (batch.mode === ServerActionBatchMode.Hack) this.hacking++;
   }
 
   public stopBatch(batch: ServerActionBatch) {
     this.running.delete(batch);
-    if (this.running.has(batch.target.name) && batch.mode === ServerActionBatchMode.Prep)
-      this.prepping--;
+    if (this.running.has(batch.target.name)) {
+      if (batch.mode === ServerActionBatchMode.Prep) this.prepping--;
+      else this.hacking--;
+    }
     this.stopping.push(batch);
   }
 
   public batchStopped(batch: ServerActionBatch) {
     this.running.delete(batch);
-    if (this.running.has(batch.target.name) && batch.mode === ServerActionBatchMode.Prep)
-      this.prepping--;
+    if (this.running.has(batch.target.name)) {
+      if (batch.mode === ServerActionBatchMode.Prep) this.prepping--;
+      else this.hacking--;
+    }
     this.stopping.delete(batch);
   }
 
@@ -95,10 +101,10 @@ export class TargetList {
 
   public shouldStart(serverDataList: ServerDataList, batch: ServerActionBatch) {
     return (
-      batch.mode !== ServerActionBatchMode.BackFill &&
-      !this.stopping.empty() &&
-      (batch.memNeeded > serverDataList.resourceList.availableMem ||
-        this.stopping.peek().canEndBefore(batch))
+      batch.mode === ServerActionBatchMode.BackFill ||
+      this.stopping.empty() ||
+      batch.memNeeded < serverDataList.resourceList.availableMem ||
+      this.stopping.peek().canEndBefore(batch)
     );
   }
 
