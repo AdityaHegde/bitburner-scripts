@@ -40,9 +40,9 @@ export class CorporationAdVertPurchaser extends PurchaserModule {
     const prevLevel = this.currentLevel;
     this.currentLevel = this.ns.corporation.getHireAdVertCount(this.divisionName);
     if (prevLevel < this.currentLevel) {
-      this.logger.log("CorpHiredAdVert", {
-        level: this.currentLevel,
-      });
+      // this.logger.log("CorpHiredAdVert", {
+      //   level: this.currentLevel,
+      // });
     } else {
       this.logger.error("CorpHiredAdVertFailed", {
         level: this.currentLevel,

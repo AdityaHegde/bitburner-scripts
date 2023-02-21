@@ -6,9 +6,7 @@ export type OrchestratorModuleEvents = {
 };
 
 export abstract class OrchestratorModule extends EventEmitter<OrchestratorModuleEvents> {
-  public isAsync = false;
+  public abstract init(): void;
 
   public abstract process(): Promise<void>;
-
-  public abstract init(): void;
 }

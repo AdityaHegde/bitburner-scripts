@@ -14,7 +14,7 @@ export class MultipleBatchReserve extends SimpleBatchReserve {
 
     batch.actionSets = [];
 
-    while (size < batch.target.times[ServerActionType.Hack] / 2) {
+    while (size < (batch.target.times[ServerActionType.Hack] * 2) / 3) {
       const actionSet = new ServerActionSet(batch.actionTypes, batch.threads);
       if (!this.reserveForSet(actionSet, batch.target.name, resourceList, 0)) {
         actionSet.unReserve(resourceList);

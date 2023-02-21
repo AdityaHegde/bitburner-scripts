@@ -15,21 +15,17 @@ export class PlayerServerPurchaser extends PurchaserModule {
   private readonly playerServerMaxCount: number;
   private playerServerCursor = 0;
   private playerServerSize: number;
-  private readonly formulaThreshold: number;
+  private readonly playerServerMaxSize: number;
 
   public constructor(
     private readonly ns: NS,
     private readonly logger: Logger,
     private readonly serverDataList: ServerDataList,
-    private readonly playerServerMaxSize: number = Number.MAX_SAFE_INTEGER,
   ) {
     super();
     this.playerServerMaxCount = ns.getPurchasedServerLimit();
-    this.playerServerMaxSize = Math.min(playerServerMaxSize, ns.getPurchasedServerMaxRam());
+    this.playerServerMaxSize = Math.min(config.playerServerMaxMem, ns.getPurchasedServerMaxRam());
     this.playerServerSize = config.playerServerInitMem;
-    this.formulaThreshold =
-      2 **
-      Math.max(Math.floor(Math.log2((2 * FormulaPrice) / ns.getPurchasedServerCost(2)) - 1), 14);
   }
 
   public init() {
@@ -73,7 +69,8 @@ export class PlayerServerPurchaser extends PurchaserModule {
       if (this.playerServerSize > this.playerServerMaxSize) return false;
       this.updateServerUpgrade();
     }
-    if (this.playerServerSize > this.formulaThreshold && !config.hasFormulaAccess) {
+    // if buy/upgrade price for 1/3 of servers is greater than formula, wait for formula
+    if ((this.price * this.playerServerMaxCount) / 3 > FormulaPrice && !config.hasFormulaAccess) {
       this.enabled = false;
     }
     return true;

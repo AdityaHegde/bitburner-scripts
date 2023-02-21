@@ -183,6 +183,7 @@ export class ServerActionBatch {
       threads: this.threads,
       count: this.count,
       ratio: this.ratio,
+      percent: this.percent,
       memNeeded: this.memNeeded,
       availableMem: resourceList.availableMem,
       reservations: this.actionSets.map((set) => set.reservationLog()).join(" || "),
@@ -196,6 +197,7 @@ export class ServerActionBatch {
       threads: this.threads,
       count: this.count,
       ratio: this.ratio,
+      percent: this.percent,
       availableMem: resourceList.availableMem,
       assignments: this.actionSets.map((set) => set.assignmentLog()).join(" || "),
     });

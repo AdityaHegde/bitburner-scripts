@@ -9,11 +9,14 @@ export const config = {
 
   disablePurchasing: false,
   playerServerInitMem: 8,
+  playerServerMaxMem: Number.MAX_SAFE_INTEGER,
 
   corp: false,
+  gang: false,
+  sleeves: false,
 };
 
 export function initConfig(ns: NS) {
   config.hasFormulaAccess = ns.fileExists(FormulaName, "home");
-  config.backFillPower = ns.getPlayer().factions.length > 0;
+  // config.backFillPower = ns.getPlayer().factions.length > 0;
 }

@@ -30,7 +30,6 @@ export class ServerDataList extends EventEmitter<ServerDataListEvents> {
 
   public maxPlayerLevel = 0;
   private lastLevel: number;
-  private serverIndex = 0;
 
   public constructor(
     private readonly ns: NS,

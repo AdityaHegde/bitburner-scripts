@@ -191,7 +191,9 @@ export class SyncedServerActionRunner extends ServerActionRunner {
     const runTimeOffset =
       hackTime * ServerActionTimeMultipliers[this.serverAction] * (this.reference.countMulti - c);
     const interSetOffset =
-      this.reference.setCount * this.reference.actionCount * BatchOperationBuffer;
+      (this.reference.setCount - this.reference.setIndex - 1) *
+      this.reference.actionCount *
+      BatchOperationBuffer;
     const intraSetOffset =
       (this.reference.actionCount - this.reference.actionIndex - 1) * BatchOperationBuffer;
     return endTime - runTimeOffset - interSetOffset - intraSetOffset;

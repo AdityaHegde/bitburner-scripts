@@ -4,7 +4,10 @@ export const MetadataFile = "metadata.txt";
 
 export const WriteRemoteMetadataScript = "writeRemoteMetadata.js";
 
-export const BatchOperationStartBuffer = 5000;
+export const Second = 1000;
+export const Minute = Second * 60;
+
+export const BatchOperationStartBuffer = 5 * Second;
 export const BatchOperationBuffer = 250;
 
 export const GrowTimeMulti = 3.2;
@@ -22,12 +25,6 @@ export const ServerWeakenAmount = 0.05;
 export const WeakenThreadsPerGrowCall = ServerWeakenAmount / (2 * ServerFortifyAmount);
 export const WeakenThreadsPerHackCall = ServerWeakenAmount / ServerFortifyAmount;
 
-export const HalfOfMaxServerSize = 2 ** 10;
-export const MaxServerSize = HalfOfMaxServerSize ** 10;
-
 export const HackGroupSize = 3;
 
-export const Second = 1000;
-export const Minute = Second * 60;
-
-export const HackBatchPercents = [1, 0.95, 0.9, 0.8, 0.7, 0.5];
+export const HackBatchPercents = [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.35, 0.3, 0.25, 0.2];

@@ -8,8 +8,8 @@ export class ScriptSchedule {
     public readonly script: string,
     public args: Array<any>,
     public readonly score: number,
-    public readonly chain?: ScriptSchedule,
+    public readonly extraScripts = new Array<string>(),
   ) {
-    this.mem = ns.getScriptRam(script);
+    this.mem = ns.getScriptRam(script, "home");
   }
 }

@@ -31,6 +31,11 @@ function connectToServer(serverDataList: ServerDataList, fromServer: string, toS
   }
 }
 
+async function breakBitNode(ns: NS, serverDataList: ServerDataList) {
+  await connectToServer(serverDataList, "home", "w0r1d_d43m0n");
+  await runTerminalCommand(`backdoor`);
+}
+
 async function purchaseCrack(ns: NS, logger: Logger, serverDataList: ServerDataList) {
   const cracks = new CracksPurchaser(ns, logger, serverDataList, new ExploitedTORAutomation());
   cracks.init();
@@ -49,6 +54,7 @@ async function runCodingContracts(ns: NS, logger: Logger, serverDataList: Server
 export type HelpersFlags = {
   server: string;
   factions: boolean;
+  bitnode: boolean;
   cracks: boolean;
   contracts: boolean;
 };
@@ -57,6 +63,7 @@ export async function main(ns: NS) {
   const [ok, flags] = validateFlags<HelpersFlags>(ns, [
     ["string", "server", "Connect to this server.", ""],
     ["boolean", "factions", "Join initial factions.", false],
+    ["boolean", "bitnode", "Break the bitnode.", false],
     ["boolean", "cracks", "Purchase cracks.", false],
     ["boolean", "contracts", "Search and run coding contracts.", false],
   ]);
@@ -75,6 +82,10 @@ export async function main(ns: NS) {
 
   if (flags.factions) {
     return joinInitialFactions(serverDataList);
+  }
+
+  if (flags.bitnode) {
+    return breakBitNode(ns, serverDataList);
   }
 
   if (flags.cracks) {
