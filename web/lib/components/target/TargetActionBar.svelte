@@ -13,7 +13,7 @@
   let tooltip = "";
   $: if (hackRun) {
     width = (hackRun.actualEndTime - hackRun.actualStartTime) / HackEntriesScale;
-    right = (Date.now() - (hackRun.actualStartTime ?? hackRun.startTime)) / HackEntriesScale;
+    right = (Date.now() - (hackRun.actualEndTime ?? hackRun.startTime)) / HackEntriesScale;
     label = ServerActionType[hackRun.action]?.[0] ?? "?";
     color = hackRun.skipped ? "bg-error" : hackRun.actualEndTime ? "bg-success" : "bg-warning";
     tooltip = `${ShorthandNotationSchema.time.convert(hackRun?.startDiff ?? 0)}`;

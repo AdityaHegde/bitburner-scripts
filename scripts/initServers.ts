@@ -7,18 +7,14 @@ import type { NS } from "$src/types/gameTypes";
 import { copyScriptToServer } from "$src/utils/copyScriptsToServer";
 import { Logger } from "$src/utils/logger/logger";
 import { isPlayerServer } from "$src/utils/isPlayerServer";
-import { validateFlags } from "$src/utils/validateFlags";
-import type { EarlyGameFlags } from "./runner";
+import { validateRunnerFlags } from "$src/runner/runnerFlags";
 
 /**
  * Does a breadth first search for accessible hosts within the city.
  * Saves the identified servers in {@link Metadata.newServers}
  */
 export async function main(ns: NS) {
-  const [ok] = validateFlags<EarlyGameFlags>(ns, [
-    ["boolean", "noPurchase", "No purchasing.", false],
-    ["boolean", "corp", "Enable corp.", false],
-  ]);
+  const [ok] = validateRunnerFlags(ns);
   if (!ok) {
     return;
   }

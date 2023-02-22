@@ -29,7 +29,7 @@ export class InvestmentRoundsModule extends DivisionManagerModule {
       case 5:
         if (corp.public) return;
         this.ns.corporation.goPublic(0);
-        this.ns.corporation.issueDividends(0.05);
+        this.ns.corporation.issueDividends(0.1);
         this.logger.info("WentPublic", investment);
         break;
     }

@@ -19,6 +19,8 @@ import { SimpleBatchReserve } from "$src/servers/server-actions/batch-reserve/Si
 import { MultipleBatchReserve } from "$src/servers/server-actions/batch-reserve/MultipleBatchReserve";
 import { config } from "$src/config";
 import { getCorpScriptSchedule } from "$src/corporation/corpScripts";
+import { getSleeveScriptSchedule } from "$src/sleeves/sleevesScriptSchedule";
+import { getGangScriptSchedule } from "$src/gang/gangScriptSchedule";
 
 export class Scheduler {
   private changed = false;
@@ -56,6 +58,8 @@ export class Scheduler {
       });
     });
     if (config.corp) this.addScriptSchedule(getCorpScriptSchedule(ns));
+    if (config.gang) this.addScriptSchedule(getGangScriptSchedule(ns));
+    if (config.sleeves) this.addScriptSchedule(getSleeveScriptSchedule(ns));
   }
 
   public async process() {
@@ -104,6 +108,7 @@ export class Scheduler {
 
   public addScriptSchedule(scriptSchedule: ScriptSchedule) {
     this.scriptScheduler.addScriptSchedule(scriptSchedule);
+    this.changed = true;
   }
 
   private createBatch(target: ServerData) {

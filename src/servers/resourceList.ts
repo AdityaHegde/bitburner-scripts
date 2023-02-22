@@ -11,6 +11,9 @@ export class ResourceList {
   public readonly resources = new Array<ServerData>();
   public availableMem = 0;
 
+  public largestServerMem = 0;
+  public secondLargestServerMem = 0;
+
   public constructor(private readonly logger: Logger) {}
 
   public add(serverData: ServerData) {
@@ -18,6 +21,11 @@ export class ResourceList {
     this.availableMem +=
       ServerActionTypeToMemMap[ServerActionType.Grow] *
       Math.floor(serverData.mem / ServerActionTypeToMemMap[ServerActionType.Grow]);
+
+    if (serverData.maxMem > this.largestServerMem) {
+      this.secondLargestServerMem = this.largestServerMem;
+      this.largestServerMem = serverData.maxMem;
+    }
   }
 
   public update(serverData: ServerData) {

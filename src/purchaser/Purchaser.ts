@@ -45,7 +45,6 @@ export class Purchaser extends OrchestratorModule {
   public async process(): Promise<void> {
     let money = this.resource.getResource();
     let topModule = this.queue.peek();
-    let purchased = false;
 
     while (!this.queue.empty() && money >= topModule.price) {
       await topModule.purchase();
@@ -55,13 +54,8 @@ export class Purchaser extends OrchestratorModule {
         this.queue.delete(topModule);
       }
 
-      purchased = true;
       money = this.resource.getResource();
       topModule = this.queue.peek();
-    }
-
-    if (purchased) {
-      this.log();
     }
   }
 

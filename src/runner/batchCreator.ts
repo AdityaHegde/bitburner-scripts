@@ -42,7 +42,11 @@ export class BatchCreator {
           this.ns.getPlayer().skills.hacking < this.serverDataList.maxPlayerLevel,
         );
       } else if (config.hasFormulaAccess) {
-        return getHackWeakenGrowWeaken(this.ns, target, 2 ** 15);
+        return getHackWeakenGrowWeaken(
+          this.ns,
+          target,
+          this.serverDataList.resourceList.secondLargestServerMem,
+        );
       } else {
         return getEarlyHackWeakenGrowWeaken(this.ns, target);
       }
@@ -65,7 +69,11 @@ export class BatchCreator {
       return;
     }
 
-    const hackBatch = getHackWeakenGrowWeaken(this.ns, batch.target, 2 ** 15);
+    const hackBatch = getHackWeakenGrowWeaken(
+      this.ns,
+      batch.target,
+      this.serverDataList.resourceList.secondLargestServerMem,
+    );
     batch.score = hackBatch.score;
   }
 }

@@ -1,18 +1,10 @@
 import type { NS } from "$src/types/gameTypes";
 import { getEarlyGameOrchestrator } from "$src/runner/orchestratorFactories";
-import { validateFlags } from "$src/utils/validateFlags";
 import { config } from "$src/config";
-
-export type EarlyGameFlags = {
-  noPurchase: boolean;
-  corp: boolean;
-};
+import { BackFillMode, validateRunnerFlags } from "$src/runner/runnerFlags";
 
 export async function main(ns: NS) {
-  const [ok, flags] = validateFlags<EarlyGameFlags>(ns, [
-    ["boolean", "noPurchase", "No purchasing.", false],
-    ["boolean", "corp", "Enable corp.", false],
-  ]);
+  const [ok, flags] = validateRunnerFlags(ns);
   if (!ok) {
     return;
   }
@@ -22,6 +14,35 @@ export async function main(ns: NS) {
     config.playerServerInitMem = 1024;
     config.corp = true;
   }
+  config.gang = flags.gang;
+  config.sleeves = flags.sleeves;
+  config.playerServerMaxMem = flags.maxMem;
+
+  switch (flags.backfill) {
+    case BackFillMode.None:
+      config.backFillExp = false;
+      config.backFillPower = false;
+      break;
+
+    case BackFillMode.Exp:
+      config.backFillExp = true;
+      config.backFillPower = false;
+      break;
+
+    case BackFillMode.Power:
+      config.backFillExp = false;
+      config.backFillPower = true;
+      break;
+  }
+
+  ns.tprintf(
+    "Running with corp=%s gang=%s sleeves=%s exp=%s power=%s",
+    config.corp,
+    config.gang,
+    config.sleeves,
+    config.backFillExp,
+    config.backFillPower,
+  );
 
   const orchestrator = getEarlyGameOrchestrator(ns, ns.getScriptRam("runner.js"));
   orchestrator.init();

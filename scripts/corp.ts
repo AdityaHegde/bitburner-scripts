@@ -10,8 +10,17 @@ import {
   getTobaccoPurchaser,
   TobaccoDivisionName,
 } from "$src/corporation/divisionManagerFactories";
+import { Second } from "$src/constants";
 
 export async function main(ns: NS) {
+  const logger = Logger.ConsoleLogger(ns, "Corp");
+
+  if (!ns.corporation.hasCorporation()) {
+    while (!ns.corporation.createCorporation("Corp", true)) {
+      await ns.sleep(Second);
+    }
+  }
+
   let hasTobacco = false;
   try {
     ns.corporation.getDivision(TobaccoDivisionName);
@@ -20,7 +29,6 @@ export async function main(ns: NS) {
     // nothing
   }
 
-  const logger = Logger.ConsoleLogger(ns, "Corp");
   if (!hasTobacco) {
     const initCorp = new InitialCorporationSetup(ns, logger);
     initCorp.init();

@@ -39,10 +39,10 @@ export class CorporationUpgradePurchaser extends PurchaserModule {
     const prevLevel = this.currentLevel;
     this.currentLevel = this.ns.corporation.getUpgradeLevel(this.upgradeName);
     if (prevLevel < this.currentLevel) {
-      this.logger.log("CorpUpgrade", {
-        upgradeName: this.upgradeName,
-        level: this.currentLevel,
-      });
+      // this.logger.log("CorpUpgrade", {
+      //   upgradeName: this.upgradeName,
+      //   level: this.currentLevel,
+      // });
     } else {
       this.logger.error("CorpUpgradeFailed", {
         upgradeName: this.upgradeName,

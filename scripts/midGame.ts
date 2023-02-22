@@ -7,6 +7,7 @@ import {
 } from "$src/runner/orchestratorFactories";
 import { config } from "$src/config";
 import { validateFlags } from "$src/utils/validateFlags";
+import { BackFillMode } from "$src/runner/runnerFlags";
 
 export enum MidGameMode {
   Default = "Default",
@@ -14,15 +15,9 @@ export enum MidGameMode {
   Prep = "Prep",
 }
 
-export enum MidGameBackFill {
-  None = "None",
-  Exp = "Exp",
-  Power = "Power",
-}
-
 export type MidGameFlags = {
   mode: MidGameMode;
-  backfill: MidGameBackFill;
+  backfill: BackFillMode;
   noPurchase: boolean;
   corp: boolean;
 };
@@ -30,7 +25,7 @@ export type MidGameFlags = {
 export async function main(ns: NS) {
   const [ok, flags] = validateFlags<MidGameFlags>(ns, [
     ["string", "mode", "Mode of the script.", MidGameMode.Default, Object.keys(MidGameMode)],
-    ["string", "backfill", "Back fill type", MidGameBackFill.Exp, Object.keys(MidGameBackFill)],
+    ["string", "backfill", "Back fill type", BackFillMode.Exp, Object.keys(BackFillMode)],
     ["boolean", "noPurchase", "No purchasing.", false],
     ["boolean", "corp", "Enable corp.", false],
   ]);
@@ -60,17 +55,17 @@ export async function main(ns: NS) {
   }
 
   switch (flags.backfill) {
-    case MidGameBackFill.None:
+    case BackFillMode.None:
       config.backFillExp = false;
       config.backFillPower = false;
       break;
 
-    case MidGameBackFill.Exp:
+    case BackFillMode.Exp:
       config.backFillExp = true;
       config.backFillPower = false;
       break;
 
-    case MidGameBackFill.Power:
+    case BackFillMode.Power:
       config.backFillExp = false;
       config.backFillPower = true;
       break;

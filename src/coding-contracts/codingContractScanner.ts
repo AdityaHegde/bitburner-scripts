@@ -3,6 +3,7 @@ import { Minute, PlayerServerPrefix } from "$src/constants";
 import { OrchestratorModule } from "$src/runner/orchestratorModule";
 import { ScriptSchedule } from "$src/runner/scheduler/scriptSchedule";
 import type { Logger } from "$src/utils/logger/logger";
+import { CodingContractWorkerScript } from "$src/coding-contracts/codingContractSolver";
 
 export const CodingContractSolverScript = "codingContracts.js";
 export const CodingContractSolverScore = 100;
@@ -43,6 +44,7 @@ export class CodingContractScanner extends OrchestratorModule {
           CodingContractSolverScript,
           [JSON.stringify(contracts)],
           CodingContractSolverScore,
+          [CodingContractWorkerScript],
         ),
       );
     }
