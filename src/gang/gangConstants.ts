@@ -89,6 +89,7 @@ export const GangUpgradeMoneyBuffer = 2.5;
 export const NonAugUpgradeMoneyBuffer = 5;
 export const ArmourUpgradeMoneyBuffer = 5;
 export const UpgradeStatMultiThreshold = 20;
+export const NonAugUpgradeRespectThreshold = 5e6;
 
 // Warfare related
 

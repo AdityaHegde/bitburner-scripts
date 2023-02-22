@@ -1,4 +1,4 @@
-import type { GangMemberInfo, NS } from "$src/types/gameTypes";
+import type { GangGenInfo, GangMemberInfo, NS } from "$src/types/gameTypes";
 import type { PrimarySingleStats } from "$src/gang/gangConstants";
 import {
   ArmourUpgradeMoneyBuffer,
@@ -36,7 +36,7 @@ export class GangMemberPurchaser {
     }
   }
 
-  public process() {
+  public process(gang: GangGenInfo) {
     if (Date.now() - this.lastRun < 5 * Second) return;
     this.lastRun = Date.now();
 

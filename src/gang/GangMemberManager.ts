@@ -54,7 +54,7 @@ export class GangMemberManager {
 
   public process(gang: GangGenInfo) {
     const gangMember = this.ns.gang.getMemberInformation(this.name);
-    this.purchaser.process();
+    this.purchaser.process(gang);
     if (this.processAscension()) {
       return;
     }
