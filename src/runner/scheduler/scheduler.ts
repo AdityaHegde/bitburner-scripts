@@ -108,6 +108,7 @@ export class Scheduler {
 
   public addScriptSchedule(scriptSchedule: ScriptSchedule) {
     this.scriptScheduler.addScriptSchedule(scriptSchedule);
+    this.changed = true;
   }
 
   private createBatch(target: ServerData) {

@@ -131,9 +131,7 @@ export function getHackWeakenGrowWeaken(
     batch.score = 0;
     batch.enabled = false;
   } else {
-    batch.score =
-      (chance * target.maxMoney * percent * 100) /
-      (target.times[ServerActionType.Weaken] * batch.memNeeded);
+    batch.score = (chance * target.maxMoney * percent * 100) / batch.memNeeded;
   }
 
   return batch;

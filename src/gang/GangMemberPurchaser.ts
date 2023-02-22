@@ -55,8 +55,9 @@ export class GangMemberPurchaser {
           : GangUpgradeMoneyBuffer;
 
       for (; this.equipment[i] < this.repo.equipment[type].length; this.equipment[i]++) {
-        const [equipmentName, , price] = this.repo.equipment[type][this.equipment[i]];
-        if (this.boughtEquipment.has(equipmentName)) continue;
+        const [equipmentName, stats, price] = this.repo.equipment[type][this.equipment[i]];
+        // TODO: check for hack should be based on the gang type
+        if (this.boughtEquipment.has(equipmentName) || stats.hack) continue;
         if (money < price * priceMulti || !this.ns.gang.purchaseEquipment(this.name, equipmentName))
           break;
         money -= price;
