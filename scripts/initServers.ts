@@ -15,9 +15,7 @@ import { validateRunnerFlags } from "$src/runner/runnerFlags";
  */
 export async function main(ns: NS) {
   const [ok] = validateRunnerFlags(ns);
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
   const logger = Logger.ConsoleLogger(ns, "InitServers");
   const metadata: Metadata = newMetadata();

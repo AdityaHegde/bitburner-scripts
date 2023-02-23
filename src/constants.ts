@@ -2,7 +2,7 @@ export const PlayerServerPrefix = "ps-";
 
 export const MetadataFile = "metadata.txt";
 
-export const WriteRemoteMetadataScript = "writeRemoteMetadata.js";
+export const WriteRemoteMetadataScript = "/server-action/writeRemoteMetadata.js";
 
 export const Second = 1000;
 export const Minute = Second * 60;

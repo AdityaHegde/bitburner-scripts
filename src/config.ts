@@ -18,5 +18,4 @@ export const config = {
 
 export function initConfig(ns: NS) {
   config.hasFormulaAccess = ns.fileExists(FormulaName, "home");
-  // config.backFillPower = ns.getPlayer().factions.length > 0;
 }

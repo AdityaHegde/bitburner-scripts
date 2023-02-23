@@ -3,7 +3,7 @@ import type { Logger } from "$src/utils/logger/logger";
 import { NameToSolutionFunction } from "$src/coding-contracts/solutions/solution";
 import type { CodingContractFile } from "$src/coding-contracts/codingContractScanner";
 
-export const CodingContractWorkerScript = "codingContractWorker.js";
+export const CodingContractWorkerScript = "/mechanics/codingContractWorker.js";
 
 export class CodingContractSolver {
   private worker: Worker;

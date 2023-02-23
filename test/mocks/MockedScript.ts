@@ -1,7 +1,7 @@
 import type { ProcessInfo } from "$src/types/gameTypes";
-import { main as grow } from "../../scripts/grow";
-import { main as hack } from "../../scripts/hack";
-import { main as weaken } from "../../scripts/weaken";
+import { main as grow } from "../../scripts/server-action/grow";
+import { main as hack } from "../../scripts/server-action/hack";
+import { main as weaken } from "../../scripts/server-action/weaken";
 import type { NSMock } from "./NSMock";
 
 const scripts = {

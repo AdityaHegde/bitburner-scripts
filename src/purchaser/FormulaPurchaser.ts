@@ -33,6 +33,7 @@ export class FormulaPurchaser extends PurchaserModule {
     }
 
     this.boughtFormula = true;
+    config.hasFormulaAccess = true;
     this.logger.info("PurchasedFormula");
     this.emit("purchaserTrigger", this.name);
   }

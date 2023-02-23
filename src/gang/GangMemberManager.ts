@@ -10,6 +10,7 @@ import {
   GangMemberTrainLevel,
   GangRespectThreshold,
   PrimaryStats,
+  Stats,
   WantedLevelAbsoluteLowerThreshold,
   WantedLevelAbsoluteUpperThreshold,
   WantedLevelGangMemberThreshold,
@@ -49,7 +50,6 @@ export class GangMemberManager {
       this.setActiveTask(this.ns.gang.getGangInformation(), gangMember);
     }
     this.purchaser.init(gangMember);
-    this.log();
   }
 
   public process(gang: GangGenInfo) {
@@ -75,6 +75,7 @@ export class GangMemberManager {
 
     if (gangMember.task !== this.taskStats.name) {
       this.ns.gang.setMemberTask(gangMember.name, this.taskStats.name);
+      this.log();
     }
   }
 
@@ -104,7 +105,11 @@ export class GangMemberManager {
     this.setTrainingTask();
 
     const gangMember = this.ns.gang.getMemberInformation(this.name);
-    this.logger.log("Ascended", gangMember);
+    this.logger.log("Ascended", {
+      name: this.name,
+      stats: Stats.map((stat) => `${stat}=${gangMember[stat]}`).join(","),
+      ascendMulti: Stats.map((stat) => `${stat}=${gangMember[stat]}_asc_mult`).join(","),
+    });
     const [, minStat] = findInArray(
       PrimaryStats[this.primaryStat],
       (a, b) => gangMember[`${a}_asc_mult`] < gangMember[`${b}_asc_mult`],
@@ -116,7 +121,6 @@ export class GangMemberManager {
   private updateTrainTask(gangMember: GangMemberInfo) {
     if (gangMember[this.primaryStat] < GangMemberTrainLevel) return;
     this.setWantedTask();
-    // this.log();
   }
 
   private updateWantedTask(gang: GangGenInfo, gangMember: GangMemberInfo) {
@@ -140,7 +144,6 @@ export class GangMemberManager {
       this.ns.gang.getMemberNames().length > WantedLevelGangMemberThreshold
     ) {
       this.setWantedTask();
-      // this.log();
       return;
     }
 
@@ -180,8 +183,6 @@ export class GangMemberManager {
         this.taskStats = this.tasksRepo.territoryTask;
         break;
     }
-
-    // this.log();
   }
 
   private log() {

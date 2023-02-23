@@ -1,4 +1,5 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import glob from "glob";
 import path from "node:path";
 import { gameClient } from "$server/jsonrpc/game-client";
 
@@ -8,15 +9,16 @@ export class GameScripts {
   public constructor(private readonly dir: string) {}
 
   public async run() {
-    const files = await readdir(this.dir);
+    const files = glob.sync(`${this.dir}/**/*.js`);
     for (const file of files) {
-      const fullPath = path.join(this.dir, file);
-      const fileStat = await stat(fullPath);
+      const fileStat = await stat(file);
       if (!fileStat.isFile() || fileStat.ctime.getTime() < this.lastChecked) continue;
 
-      const content = (await readFile(fullPath)).toString();
+      const remotePath = file.replace(`${this.dir}/`, "");
+      const remoteDir = path.dirname(remotePath);
+      const content = (await readFile(file)).toString();
       await gameClient.pushFile({
-        filename: file,
+        filename: (remoteDir === "." ? "" : "/") + remotePath,
         server: "home",
         content,
       });

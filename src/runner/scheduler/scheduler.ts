@@ -24,6 +24,7 @@ import { getGangScriptSchedule } from "$src/gang/gangScriptSchedule";
 
 export class Scheduler {
   private changed = false;
+  private resetting = false;
 
   private simpleReserve = new SimpleBatchReserve();
   private multiReserve = new MultipleBatchReserve();
@@ -63,7 +64,7 @@ export class Scheduler {
   }
 
   public async process() {
-    if (!this.changed) return;
+    if (!this.changed || this.resetting) return;
     this.changed = false;
     this.logger.log("TargetList", {
       availableMem: Math.floor(this.serverDataList.resourceList.availableMem),
@@ -78,7 +79,7 @@ export class Scheduler {
     this.scriptScheduler.process();
 
     // stopBatch running clusters that have a lower score that the one at the top of the hack queue
-    this.stopRunningTargets(this.targetList.hackQueue);
+    // this.stopRunningTargets(this.targetList.hackQueue);
 
     // if there are free resources and any of the running clusters can be expanded then stop it
     this.expandRunningTargets();

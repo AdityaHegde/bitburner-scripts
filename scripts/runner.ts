@@ -5,9 +5,7 @@ import { BackFillMode, validateRunnerFlags } from "$src/runner/runnerFlags";
 
 export async function main(ns: NS) {
   const [ok, flags] = validateRunnerFlags(ns);
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
   config.disablePurchasing = flags.noPurchase;
   if (flags.corp) {

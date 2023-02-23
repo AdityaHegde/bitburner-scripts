@@ -8,11 +8,11 @@ export enum ServerActionType {
   Experience,
 }
 
-export const WeakenScript = "weaken.js";
-export const GrowScript = "grow.js";
-export const HackScript = "hack.js";
-export const SharePowerScript = "sharePower.js";
-export const ExperienceScript = "experience.js";
+export const WeakenScript = "/server-action/weaken.js";
+export const GrowScript = "/server-action/grow.js";
+export const HackScript = "/server-action/hack.js";
+export const SharePowerScript = "/server-action/sharePower.js";
+export const ExperienceScript = "/server-action/experience.js";
 export const ServerActionScripts = [
   WeakenScript,
   GrowScript,

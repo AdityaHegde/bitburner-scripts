@@ -8,9 +8,6 @@ import { Logger } from "$src/utils/logger/logger";
 import { asyncWait } from "$server/utils/asyncUtils";
 import { CracksPurchaser } from "$src/purchaser/CracksPurchaser";
 import { ExploitedTORAutomation } from "$src/automation/exploits/ExploitedTORAutomation";
-import { CodingContractsProcessor } from "$src/coding-contracts/codingContractsProcessor";
-import { CodingContractScanner } from "$src/coding-contracts/codingContractScanner";
-import { CodingContractSolver } from "$src/coding-contracts/codingContractSolver";
 
 const FactionServers = ["CSEC", "avmnite-02h", "I.I.I.I", "run4theh111z"];
 
@@ -42,21 +39,12 @@ async function purchaseCrack(ns: NS, logger: Logger, serverDataList: ServerDataL
   return cracks.purchase();
 }
 
-async function runCodingContracts(ns: NS, logger: Logger, serverDataList: ServerDataList) {
-  const contracts = new CodingContractsProcessor(
-    ns,
-    new CodingContractScanner(ns, logger, serverDataList.allServers),
-    new CodingContractSolver(ns, logger),
-  );
-  return contracts.process();
-}
-
 export type HelpersFlags = {
   server: string;
   factions: boolean;
   bitnode: boolean;
   cracks: boolean;
-  contracts: boolean;
+  karma: boolean;
 };
 
 export async function main(ns: NS) {
@@ -65,11 +53,9 @@ export async function main(ns: NS) {
     ["boolean", "factions", "Join initial factions.", false],
     ["boolean", "bitnode", "Break the bitnode.", false],
     ["boolean", "cracks", "Purchase cracks.", false],
-    ["boolean", "contracts", "Search and run coding contracts.", false],
+    ["boolean", "karma", "Print the karma.", false],
   ]);
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
   const metadata = getMetadata(ns);
   const cracks = new Cracks(ns);
@@ -92,7 +78,7 @@ export async function main(ns: NS) {
     return purchaseCrack(ns, logger, serverDataList);
   }
 
-  if (flags.contracts) {
-    return runCodingContracts(ns, logger, serverDataList);
+  if (flags.karma) {
+    ns.tprintf("%s\n", (ns as any).heart.break);
   }
 }

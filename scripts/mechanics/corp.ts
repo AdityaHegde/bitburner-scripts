@@ -11,8 +11,10 @@ import {
   TobaccoDivisionName,
 } from "$src/corporation/divisionManagerFactories";
 import { Second } from "$src/constants";
+import { initConfig } from "$src/config";
 
 export async function main(ns: NS) {
+  initConfig(ns);
   const logger = Logger.ConsoleLogger(ns, "Corp");
 
   if (!ns.corporation.hasCorporation()) {
